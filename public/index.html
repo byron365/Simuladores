@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Simuladores Virtuales</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+           background: #59CDE9;  /* fallback for old browsers */
+            background: -webkit-linear-gradient(to top, #0A2A88, #59CDE9);  /* Chrome 10-25, Safari 5.1-6 */
+            background: linear-gradient(to top, #0A2A88, #59CDE9); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
+            width: 400px;
+        }
+
+        h1 {
+            margin-bottom: 40px;
+            font-size: 28px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 15px 0;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+
+        .btn1 {
+            background: #00c6ff;
+            color: black;
+        }
+
+        .btn2 {
+            background: #00ff95;
+            color: black;
+        }
+
+        .btn3 {
+            background: #ffcc00;
+            color: black;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px white;
+        }
+
+        footer {
+            margin-top: 30px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Simuladores Virtuales</h1>
+
+        <a href="/movimiento" class="btn btn1">Simulador de Movimiento</a>
+        <a href="/plantas" class="btn btn2">Simulador de Plantas</a>
+        <a href="/trafico" class="btn btn3">Simulador de Tráfico</a>
+
+        <footer>
+            STEAM ROBOTICS ACADEMY - Red Local
+        </footer>
+    </div>
+
+</body>
+</html>

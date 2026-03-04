@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Física — Proyectil</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a14;
+    --panel: #0b1528;
+    --border: #1a2d4a;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --accent3: #7fff6e;
+    --text: #c8dff5;
+    --muted: white;
+    --glow: 0 0 20px rgba(0,229,255,0.3);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(11,21,40,0.9);
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+
+  header h1 {
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  #planetBadge {
+    font-size: 0.68rem;
+    padding: 2px 9px;
+    border-radius: 20px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    transition: all 0.5s ease;
+  }
+
+  .badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* ──────────────────────────────
+     PANEL IZQUIERDO
+  ────────────────────────────── */
+  .controls {
+    width: 238px;
+    flex-shrink: 0;
+    background: rgba(11,21,40,0.9);
+    backdrop-filter: blur(10px);
+    border-right: 1px solid var(--border);
+    padding: 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow-y: auto;
+  }
+
+  /* ── Collapsible group ── */
+  .ctrl-group {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .ctrl-group:hover { border-color: rgba(0,229,255,0.18); }
+
+  .ctrl-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    cursor: pointer;
+    user-select: none;
+    background: rgba(255,255,255,0.02);
+    transition: background 0.15s;
+    gap: 6px;
+  }
+  .ctrl-header:hover { background: rgba(0,229,255,0.06); }
+
+  .ctrl-header-left {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .ctrl-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .ctrl-header-right {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+  }
+
+  .ctrl-summary {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.73rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: color 0.3s;
+  }
+
+  .ctrl-chevron {
+    font-size: 0.5rem;
+    color: var(--muted);
+    transition: transform 0.22s ease;
+    line-height: 1;
+  }
+  .ctrl-group.open .ctrl-chevron { transform: rotate(180deg); }
+
+  .ctrl-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.28s ease, padding 0.28s ease;
+    padding: 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(0,0,0,0.18);
+  }
+  .ctrl-group.open .ctrl-body {
+    max-height: 300px;
+    padding: 10px 10px 12px;
+  }
+
+  .ctrl-row { display: flex; align-items: center; gap: 10px; }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    cursor: pointer;
+  }
+  input[type=range].orange::-webkit-slider-thumb { background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
+  input[type=range].green::-webkit-slider-thumb  { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); }
+
+  .divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+  .btn-launch {
+    width: 100%;
+    padding: 11px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 0 20px rgba(0,229,255,0.22);
+    margin-top: 4px;
+  }
+  .btn-launch:hover { box-shadow: 0 0 30px rgba(0,229,255,0.5); transform: translateY(-1px); }
+  .btn-launch:active { transform: translateY(0); }
+
+  .btn-clear {
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 3px;
+  }
+  .btn-clear:hover { color: var(--accent2); border-color: var(--accent2); }
+
+  .stats { display: flex; flex-direction: column; gap: 0; margin-top: 4px; }
+  .stats-title { font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+  .stat { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(26,45,74,0.5); }
+  .stat:last-child { border-bottom: none; }
+  .stat-name { font-size: 0.6rem; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; }
+  .stat-val  { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--text); }
+
+  /* planet presets grid */
+  .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .preset-btn {
+    background: rgba(0,229,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 4px;
+    border-radius: 4px;
+    font-size: 0.62rem;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .preset-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+  .preset-btn.active-planet { border-color: var(--accent3) !important; color: var(--accent3) !important; background: rgba(127,255,110,0.08) !important; }
+
+  /* color dots */
+  .color-row { display: flex; gap: 7px; }
+  .color-btn { width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform 0.15s; }
+  .color-btn:hover { transform: scale(1.2); }
+  .color-btn.active { border-color: white; }
+
+  /* ── CANVAS ── */
+  .canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+  #bgLayer { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #sim { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* ── RIGHT PANEL ── */
+  .info-panel {
+    width: 192px;
+    flex-shrink: 0;
+    background: rgba(11,21,40,0.9);
+    backdrop-filter: blur(10px);
+    border-left: 1px solid var(--border);
+    padding: 14px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    overflow-y: auto;
+  }
+
+  .info-title { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .trajectory-legend { display: flex; flex-direction: column; gap: 7px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.67rem; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .formula-box {
+    background: rgba(0,229,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.59rem;
+    color: var(--muted);
+    line-height: 1.85;
+  }
+  .formula-box .fc  { color: var(--accent); }
+  .formula-box .fc2 { color: var(--accent2); }
+  .formula-box .fc3 { color: var(--accent3); }
+
+  /* ── HUD ── */
+  .hud {
+    position: absolute;
+    top: 14px; right: 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-align: right;
+    pointer-events: none;
+    line-height: 1.7;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  }
+  .hud .live { color: var(--accent3); }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  a{
+    color: white;
+    font-size: 20px;
+    font-weight: bolder;
+    text-decoration: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⦿ Simulador de Proyectil <span id="planetBadge">🌍 TIERRA</span></h1>
+  <span class="badge">FÍSICA CLÁSICA · 2D</span>
+  <a href="/">INICIO</a>
+</header>
+
+<div class="main">
+
+  <!-- ────────── PANEL IZQUIERDO ────────── -->
+  <div class="controls">
+
+    <!-- Ángulo -->
+    <div class="ctrl-group open" id="grp-angle">
+      <div class="ctrl-header" onclick="toggleGroup('grp-angle')">
+        <div class="ctrl-header-left">
+          <span>🎯</span><span class="ctrl-label">Ángulo</span>
+        </div>
+        <div class="ctrl-header-right">
+          <span class="ctrl-summary" id="angleVal" style="color:var(--accent2)">45°</span>
+          <span class="ctrl-chevron">▼</span>
+        </div>
+      </div>
+      <div class="ctrl-body">
+        <input type="range" id="angleSlider" min="1" max="89" value="45" class="orange">
+      </div>
+    </div>
+
+    <!-- Velocidad -->
+    <div class="ctrl-group open" id="grp-speed">
+      <div class="ctrl-header" onclick="toggleGroup('grp-speed')">
+        <div class="ctrl-header-left">
+          <span>💨</span><span class="ctrl-label">Velocidad inicial</span>
+        </div>
+        <div class="ctrl-header-right">
+          <span class="ctrl-summary" id="speedVal" style="color:var(--accent)">40 m/s</span>
+          <span class="ctrl-chevron">▼</span>
+        </div>
+      </div>
+      <div class="ctrl-body">
+        <input type="range" id="speedSlider" min="5" max="100" value="40">
+      </div>
+    </div>
+
+    <!-- Gravedad -->
+    <div class="ctrl-group open" id="grp-grav">
+      <div class="ctrl-header" onclick="toggleGroup('grp-grav')">
+        <div class="ctrl-header-left">
+          <span>🌍</span><span class="ctrl-label">Gravedad</span>
+        </div>
+        <div class="ctrl-header-right">
+          <span class="ctrl-summary" id="gravVal" style="color:var(--accent3)">9.8 m/s²</span>
+          <span class="ctrl-chevron">▼</span>
+        </div>
+      </div>
+      <div class="ctrl-body">
+        <input type="range" id="gravSlider" min="0.5" max="30" value="9.8" step="0.1" class="green">
+        <div class="preset-grid">
+          <button class="preset-btn" data-g="1.62"  data-planet="luna">🌙 Luna</button>
+          <button class="preset-btn" data-g="3.72"  data-planet="marte">🔴 Marte</button>
+          <button class="preset-btn active-planet" data-g="9.8" data-planet="tierra">🌍 Tierra</button>
+          <button class="preset-btn" data-g="24.8"  data-planet="jupiter">🪐 Júpiter</button>
+          <button class="preset-btn" data-g="27.4"  data-planet="sol">☀️ Sol</button>
+          <button class="preset-btn" data-g="0.5"   data-planet="espacio">🛸 Espacio</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resistencia del aire -->
+    <div class="ctrl-group" id="grp-drag">
+      <div class="ctrl-header" onclick="toggleGroup('grp-drag')">
+        <div class="ctrl-header-left">
+          <span>🌫️</span><span class="ctrl-label">Resist. aire</span>
+        </div>
+        <div class="ctrl-header-right">
+          <span class="ctrl-summary" id="dragVal" style="color:var(--accent)">0.000</span>
+          <span class="ctrl-chevron">▼</span>
+        </div>
+      </div>
+      <div class="ctrl-body">
+        <input type="range" id="dragSlider" min="0" max="0.05" value="0" step="0.001">
+      </div>
+    </div>
+
+    <!-- Color -->
+    <div class="ctrl-group" id="grp-color">
+      <div class="ctrl-header" onclick="toggleGroup('grp-color')">
+        <div class="ctrl-header-left">
+          <span>🎨</span><span class="ctrl-label">Color trayectoria</span>
+        </div>
+        <div class="ctrl-header-right">
+          <span id="colorDot" style="width:10px;height:10px;border-radius:50%;background:#00e5ff;display:inline-block;box-shadow:0 0 6px #00e5ff;"></span>
+          <span class="ctrl-chevron">▼</span>
+        </div>
+      </div>
+      <div class="ctrl-body">
+        <div class="color-row">
+          <button class="color-btn active" data-color="#00e5ff" style="background:#00e5ff"></button>
+          <button class="color-btn" data-color="#ff6b35" style="background:#ff6b35"></button>
+          <button class="color-btn" data-color="#7fff6e" style="background:#7fff6e"></button>
+          <button class="color-btn" data-color="#ff4fa3" style="background:#ff4fa3"></button>
+          <button class="color-btn" data-color="#ffe566" style="background:#ffe566"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <button class="btn-launch" id="launchBtn">▶ Lanzar</button>
+    <button class="btn-clear"  id="clearBtn">✕ Limpiar trayectorias</button>
+    <div class="divider"></div>
+
+    <div class="stats">
+      <div class="stats-title">Resultados</div>
+      <div class="stat"><span class="stat-name">Alcance</span>    <span class="stat-val" id="stRange">—</span></div>
+      <div class="stat"><span class="stat-name">Altura máx</span> <span class="stat-val" id="stHeight">—</span></div>
+      <div class="stat"><span class="stat-name">T. vuelo</span>   <span class="stat-val" id="stTime">—</span></div>
+      <div class="stat"><span class="stat-name">Vel. impacto</span><span class="stat-val" id="stImpact">—</span></div>
+    </div>
+
+  </div>
+
+  <!-- ────────── CANVAS ────────── -->
+  <div class="canvas-wrap" id="canvasWrap">
+    <canvas id="bgLayer"></canvas>
+    <canvas id="sim"></canvas>
+    <div class="hud">
+      <div id="hudPos">x: — &nbsp; y: —</div>
+      <div id="hudVel">vx: — &nbsp; vy: —</div>
+      <div id="hudT" class="live">t: —</div>
+    </div>
+  </div>
+
+  <!-- ────────── PANEL DERECHO ────────── -->
+  <div class="info-panel">
+    <div class="info-title">Ecuaciones</div>
+    <div class="formula-box">
+      <span class="fc">x</span>(t) = v₀·cos(θ)·t<br>
+      <span class="fc">y</span>(t) = v₀·sin(θ)·t − ½<span class="fc3">g</span>·t²<br><br>
+      <span class="fc2">Alcance</span>:<br>
+      R = v₀²·sin(2θ) / g<br><br>
+      <span class="fc3">H máx</span>:<br>
+      H = v₀²·sin²(θ) / 2g<br><br>
+      <span class="fc">T vuelo</span>:<br>
+      T = 2·v₀·sin(θ) / g
+    </div>
+
+    <div class="divider"></div>
+    <div class="info-title">Trayectorias</div>
+    <div class="trajectory-legend" id="legend"></div>
+
+    <div class="divider"></div>
+    <div class="info-title">Atajos</div>
+    <div style="font-size:0.61rem;color:var(--muted);line-height:1.9;">
+      <b style="color:var(--text)">Espacio</b> — Lanzar<br>
+      <b style="color:var(--text)">C</b> — Limpiar<br>
+      <b style="color:var(--text)">← →</b> — Ángulo<br>
+      <b style="color:var(--text)">↑ ↓</b> — Velocidad<br>
+      <b style="color:var(--text)">Click</b> — Lanzar
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════
+//  COLLAPSIBLE GROUPS
+// ══════════════════════════════
+function toggleGroup(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ══════════════════════════════
+//  PLANET THEMES
+// ══════════════════════════════
+const PLANETS = {
+  luna: {
+    name: '🌙 LUNA',
+    sky: ['#03030c','#080616','#120e2a'],
+    ground: '#1e1830', groundLine: '#3d3060',
+    stars: true, starBright: 0.9,
+    accent: '#c8b4ff', accentRgb: '200,180,255',
+    scene: 'luna'
+  },
+  marte: {
+    name: '🔴 MARTE',
+    sky: ['#1a0600','#3d1200','#6b2000'],
+    ground: '#7a3015', groundLine: '#c04820',
+    stars: true, starBright: 0.5,
+    accent: '#ff7040', accentRgb: '255,112,64',
+    scene: 'marte', fog: 'rgba(160,50,10,0.15)'
+  },
+  tierra: {
+    name: '🌍 TIERRA',
+    sky: ['#050a14','#0b1a38','#0d2a5a'],
+    ground: '#0a1e0d', groundLine: '#184020',
+    stars: true, starBright: 0.4,
+    accent: '#00e5ff', accentRgb: '0,229,255',
+    scene: 'tierra'
+  },
+  jupiter: {
+    name: '🪐 JÚPITER',
+    sky: ['#180a02','#2d1205','#4a1e08'],
+    ground: '#3d1e06', groundLine: '#7a3e12',
+    stars: false, starBright: 0,
+    accent: '#ffaa44', accentRgb: '255,170,68',
+    scene: 'jupiter', fog: 'rgba(200,90,20,0.2)'
+  },
+  sol: {
+    name: '☀️ SOL',
+    sky: ['#140400','#3d1000','#7a2000'],
+    ground: '#500e00', groundLine: '#ff4400',
+    stars: false, starBright: 0,
+    accent: '#ffcc00', accentRgb: '255,204,0',
+    scene: 'sol', fog: 'rgba(255,100,0,0.22)'
+  },
+  espacio: {
+    name: '🛸 ESPACIO',
+    sky: ['#000003','#000008','#01060f'],
+    ground: '#060618', groundLine: '#14144a',
+    stars: true, starBright: 1.0,
+    accent: '#8888ff', accentRgb: '136,136,255',
+    scene: 'espacio'
+  }
+};
+
+let currentPlanet = 'tierra';
+
+// ══════════════════════════════
+//  CANVAS REFS
+// ══════════════════════════════
+const bgCanvas = document.getElementById('bgLayer');
+const bgCtx    = bgCanvas.getContext('2d');
+const canvas   = document.getElementById('sim');
+const ctx      = canvas.getContext('2d');
+const wrap     = document.getElementById('canvasWrap');
+
+// ══════════════════════════════
+//  STATE
+// ══════════════════════════════
+let trajectories = [];
+let current = null;
+let animId = null;
+let trailColor = '#00e5ff';
+let originX, originY;
+
+const p = {
+  get angle() { return +document.getElementById('angleSlider').value; },
+  get speed() { return +document.getElementById('speedSlider').value; },
+  get grav()  { return +document.getElementById('gravSlider').value; },
+  get drag()  { return +document.getElementById('dragSlider').value; },
+};
+
+// ══════════════════════════════
+//  SLIDERS
+// ══════════════════════════════
+function bindSlider(id, valId, fmt) {
+  const sl = document.getElementById(id);
+  const vl = document.getElementById(valId);
+  const upd = () => { vl.textContent = fmt(sl.value); drawSim(); };
+  sl.addEventListener('input', upd); upd();
+}
+bindSlider('angleSlider', 'angleVal', v => v + '°');
+bindSlider('speedSlider', 'speedVal', v => v + ' m/s');
+bindSlider('gravSlider',  'gravVal',  v => parseFloat(v).toFixed(1) + ' m/s²');
+bindSlider('dragSlider',  'dragVal',  v => parseFloat(v).toFixed(3));
+
+// ══════════════════════════════
+//  PLANET PRESETS
+// ══════════════════════════════
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active-planet'));
+    btn.classList.add('active-planet');
+    const sl = document.getElementById('gravSlider');
+    sl.value = btn.dataset.g;
+    sl.dispatchEvent(new Event('input'));
+    setPlanet(btn.dataset.planet);
+  });
+});
+
+function setPlanet(key) {
+  currentPlanet = key;
+  const theme = PLANETS[key] || PLANETS.tierra;
+  const badge = document.getElementById('planetBadge');
+  badge.textContent = theme.name;
+  badge.style.borderColor = theme.accent;
+  badge.style.color = theme.accent;
+  bgCanvas._stars = null; // regenerate
+  drawBackground();
+  drawSim();
+}
+
+// ══════════════════════════════
+//  BACKGROUND DRAWING
+// ══════════════════════════════
+function drawBackground() {
+  if (!originY) return;
+  const w = bgCanvas.width, h = bgCanvas.height;
+  const T = PLANETS[currentPlanet] || PLANETS.tierra;
+  bgCtx.clearRect(0, 0, w, h);
+
+  // Sky gradient
+  const sg = bgCtx.createLinearGradient(0, 0, 0, originY);
+  sg.addColorStop(0,   T.sky[0]);
+  sg.addColorStop(0.5, T.sky[1]);
+  sg.addColorStop(1,   T.sky[2]);
+  bgCtx.fillStyle = sg;
+  bgCtx.fillRect(0, 0, w, h);
+
+  // Stars
+  if (T.stars) {
+    if (!bgCanvas._stars) {
+      bgCanvas._stars = Array.from({length: 180}, () => ({
+        x: Math.random(), y: Math.random() * 0.9,
+        r: Math.random() * 1.3 + 0.2,
+        a: Math.random() * T.starBright
+      }));
+    }
+    bgCanvas._stars.forEach(s => {
+      bgCtx.beginPath();
+      bgCtx.arc(s.x * w, s.y * originY, s.r, 0, Math.PI * 2);
+      bgCtx.fillStyle = `rgba(220,230,255,${s.a})`;
+      bgCtx.fill();
+    });
+  }
+
+  // Scene-specific elements
+  drawScene(T, w, h);
+
+  // Fog
+  if (T.fog) {
+    const fg = bgCtx.createLinearGradient(0, originY * 0.5, 0, originY);
+    fg.addColorStop(0, 'transparent');
+    fg.addColorStop(1, T.fog);
+    bgCtx.fillStyle = fg;
+    bgCtx.fillRect(0, 0, w, originY);
+  }
+
+  // Ground
+  const gg = bgCtx.createLinearGradient(0, originY, 0, h);
+  gg.addColorStop(0, T.ground);
+  gg.addColorStop(1, darken(T.ground, 40));
+  bgCtx.fillStyle = gg;
+  bgCtx.fillRect(0, originY, w, h - originY);
+
+  // Ground glow line
+  bgCtx.shadowBlur = 10; bgCtx.shadowColor = T.groundLine;
+  bgCtx.strokeStyle = T.groundLine; bgCtx.lineWidth = 1.5;
+  bgCtx.beginPath(); bgCtx.moveTo(0, originY); bgCtx.lineTo(w, originY); bgCtx.stroke();
+  bgCtx.shadowBlur = 0;
+}
+
+function drawScene(T, w, h) {
+  const gy = originY;
+  if (T.scene === 'luna') {
+    // distant craters
+    [[w*0.72, gy*0.22, 38],[w*0.88, gy*0.5, 22],[w*0.5, gy*0.65, 14]].forEach(([cx,cy,r]) => {
+      bgCtx.strokeStyle = 'rgba(160,140,200,0.14)'; bgCtx.lineWidth = 2;
+      bgCtx.beginPath(); bgCtx.arc(cx, cy, r, 0, Math.PI*2); bgCtx.stroke();
+    });
+    // moon glow in sky
+    const mg = bgCtx.createRadialGradient(w*.76, gy*.15, 4, w*.76, gy*.15, 60);
+    mg.addColorStop(0, 'rgba(200,180,255,0.14)');
+    mg.addColorStop(1, 'transparent');
+    bgCtx.fillStyle = mg; bgCtx.fillRect(0, 0, w, gy);
+  }
+  else if (T.scene === 'marte') {
+    // distant mesa mountains
+    bgCtx.fillStyle = 'rgba(100,35,10,0.55)';
+    bgCtx.beginPath(); bgCtx.moveTo(0, gy);
+    [[0.1,.88],[0.22,.72],[0.38,.8],[0.55,.68],[0.7,.76],[0.85,.82],[1,.9]].forEach(([px,py]) => {
+      bgCtx.lineTo(w*px, gy - gy*0.18*(1-py+0.65));
+    });
+    bgCtx.lineTo(w, gy); bgCtx.closePath(); bgCtx.fill();
+    // sun (smaller, hazy)
+    const sunG = bgCtx.createRadialGradient(w*.8, gy*.12, 2, w*.8, gy*.12, 25);
+    sunG.addColorStop(0, 'rgba(255,160,80,0.5)');
+    sunG.addColorStop(1, 'transparent');
+    bgCtx.fillStyle = sunG; bgCtx.fillRect(0, 0, w, gy);
+  }
+  else if (T.scene === 'tierra') {
+    // rolling hills
+    bgCtx.fillStyle = 'rgba(8,28,10,0.45)';
+    bgCtx.beginPath(); bgCtx.moveTo(0, gy);
+    [[0.12,.9],[0.28,.76],[0.45,.84],[0.6,.7],[0.76,.8],[0.9,.87],[1,.93]].forEach(([px,py]) => {
+      bgCtx.lineTo(w*px, gy - gy*0.12*(1-py+0.72));
+    });
+    bgCtx.lineTo(w, gy); bgCtx.closePath(); bgCtx.fill();
+  }
+  else if (T.scene === 'jupiter') {
+    // atmospheric bands
+    [0.25,0.42,0.57,0.7].forEach((frac, i) => {
+      const c = [160+i*15, 70-i*10, 10];
+      bgCtx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${0.07+i*0.03})`;
+      bgCtx.fillRect(0, frac*gy, w, gy*0.07);
+    });
+    // Great Red Spot hint
+    bgCtx.beginPath(); bgCtx.ellipse(w*.78, gy*.55, 50, 22, 0, 0, Math.PI*2);
+    bgCtx.fillStyle = 'rgba(180,60,20,0.1)'; bgCtx.fill();
+  }
+  else if (T.scene === 'sol') {
+    // plasma corona glow
+    const pg = bgCtx.createRadialGradient(w*.5, gy, 0, w*.5, gy, w*.65);
+    pg.addColorStop(0, 'rgba(255,180,0,0.3)');
+    pg.addColorStop(0.4,'rgba(255,80,0,0.15)');
+    pg.addColorStop(1, 'transparent');
+    bgCtx.fillStyle = pg; bgCtx.fillRect(0, 0, w, h);
+    // solar flare arcs
+    for (let i = 0; i < 6; i++) {
+      const fx = w*(0.15 + i*0.14);
+      const fh = 40 + Math.sin(i*1.3)*30;
+      bgCtx.strokeStyle = `rgba(255,${160-i*15},0,0.2)`; bgCtx.lineWidth = 2;
+      bgCtx.beginPath();
+      bgCtx.moveTo(fx, gy);
+      bgCtx.quadraticCurveTo(fx+18, gy-fh, fx+4, gy-fh*1.6);
+      bgCtx.stroke();
+    }
+  }
+  else if (T.scene === 'espacio') {
+    // nebula blobs
+    [[w*.6, gy*.3, 'rgba(60,30,140,0.1)'], [w*.25, gy*.5, 'rgba(0,80,120,0.08)']].forEach(([nx,ny,col]) => {
+      const ng = bgCtx.createRadialGradient(nx, ny, 0, nx, ny, w*.25);
+      ng.addColorStop(0, col); ng.addColorStop(1, 'transparent');
+      bgCtx.fillStyle = ng; bgCtx.fillRect(0, 0, w, h);
+    });
+    // galaxy streak
+    bgCtx.save(); bgCtx.globalAlpha = 0.08;
+    bgCtx.beginPath(); bgCtx.ellipse(w*.7, gy*.2, 90, 14, 0.4, 0, Math.PI*2);
+    bgCtx.fillStyle = 'rgba(140,120,255,1)'; bgCtx.fill();
+    bgCtx.restore();
+  }
+}
+
+function darken(hex, amount) {
+  const n = parseInt(hex.replace('#',''), 16);
+  const r = Math.max(0, (n>>16) - amount);
+  const g = Math.max(0, ((n>>8)&0xff) - amount);
+  const b = Math.max(0, (n&0xff) - amount);
+  return `rgb(${r},${g},${b})`;
+}
+
+// ══════════════════════════════
+//  SIM CANVAS DRAWING
+// ══════════════════════════════
+function drawSim() {
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  // Grid
+  const step = scale() > 4 ? 10 : 20;
+  ctx.strokeStyle = 'rgba(0,229,255,0.05)'; ctx.lineWidth = 1;
+  for (let mx = 0; mx < 300; mx += step) {
+    const cx = toX(mx); if (cx > w) break;
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+  }
+  for (let my = 0; my < 300; my += step) {
+    const cy = toY(my); if (cy < 0) break;
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+  }
+
+  // Axis labels
+  ctx.fillStyle = 'rgba(74,106,138,0.75)'; ctx.font = '9px Space Mono, monospace';
+  for (let mx = 0; mx < 300; mx += step) {
+    const cx = toX(mx); if (cx < 0 || cx > w) continue;
+    ctx.fillText(mx, cx - 6, originY + 14);
+  }
+  for (let my = step; my < 300; my += step) {
+    const cy = toY(my); if (cy < 0 || cy > h) continue;
+    ctx.fillText(my, originX - 28, cy + 3);
+  }
+
+  // Axes
+  ctx.strokeStyle = 'rgba(0,229,255,0.2)'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(originX, 0); ctx.lineTo(originX, h);
+  ctx.moveTo(0, originY); ctx.lineTo(w, originY);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(0,229,255,0.45)';
+  arrowHead(originX, 10, 'up'); arrowHead(w-10, originY, 'right');
+  ctx.font = '10px Syne, sans-serif';
+  ctx.fillText('y (m)', originX + 6, 20);
+  ctx.fillText('x (m)', w - 30, originY - 8);
+
+  trajectories.forEach(tr => drawTrajectory(tr, false));
+  drawAngleArc();
+}
+
+function scale()  { return canvas.width / 200; }
+function toX(mx) { return originX + mx * scale(); }
+function toY(my) { return originY - my * scale(); }
+
+function arrowHead(x, y, dir) {
+  ctx.beginPath();
+  if (dir === 'up')    { ctx.moveTo(x,y); ctx.lineTo(x-5,y+10); ctx.lineTo(x+5,y+10); }
+  else                 { ctx.moveTo(x,y); ctx.lineTo(x-10,y-5); ctx.lineTo(x-10,y+5); }
+  ctx.closePath(); ctx.fill();
+}
+
+function drawAngleArc() {
+  const a = p.angle * Math.PI / 180;
+  ctx.strokeStyle = 'rgba(255,107,53,0.55)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(originX, originY, 36, -a, 0); ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255,107,53,0.9)'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(originX, originY);
+  ctx.lineTo(originX + Math.cos(a)*55, originY - Math.sin(a)*55);
+  ctx.stroke();
+
+  const ex = originX + Math.cos(a)*55, ey = originY - Math.sin(a)*55;
+  ctx.fillStyle = 'rgba(255,107,53,0.9)';
+  ctx.beginPath(); ctx.arc(ex, ey, 4, 0, Math.PI*2); ctx.fill();
+  ctx.font = '11px Space Mono, monospace';
+  ctx.fillText(p.angle + '°', originX + 20, originY - 10);
+}
+
+function drawTrajectory(tr, isLive) {
+  if (!tr.points || tr.points.length < 2) return;
+  const pts = tr.points;
+  ctx.shadowBlur = isLive ? 12 : 5; ctx.shadowColor = tr.color;
+  ctx.beginPath(); ctx.moveTo(toX(pts[0].x), toY(pts[0].y));
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(toX(pts[i].x), toY(pts[i].y));
+  ctx.strokeStyle = isLive ? tr.color : tr.color + '88';
+  ctx.lineWidth = isLive ? 2.5 : 1.8; ctx.lineCap = 'round'; ctx.stroke();
+  ctx.shadowBlur = 0;
+  if (!isLive) {
+    const last = pts[pts.length-1];
+    ctx.beginPath(); ctx.arc(toX(last.x), toY(last.y), 4, 0, Math.PI*2);
+    ctx.fillStyle = tr.color; ctx.fill();
+    ctx.fillStyle = tr.color + 'aa'; ctx.font = '9px Space Mono, monospace';
+    ctx.fillText(`${last.x.toFixed(1)}m`, toX(last.x)+6, toY(last.y)-4);
+  }
+}
+
+// ══════════════════════════════
+//  PHYSICS
+// ══════════════════════════════
+function computeTrajectory(v0, angleDeg, g, drag) {
+  const a = angleDeg * Math.PI / 180, dt = 0.02;
+  let vx = v0*Math.cos(a), vy = v0*Math.sin(a), x=0, y=0, t=0;
+  const pts = [{x,y,vx,vy,t}]; let maxH = 0;
+  for (let i = 0; i < 20000; i++) {
+    const sp = Math.sqrt(vx*vx+vy*vy);
+    vx += -drag*sp*vx*dt; vy += (-drag*sp*vy - g)*dt;
+    x += vx*dt; y += vy*dt; t += dt;
+    if (y < 0) { y=0; break; }
+    if (y > maxH) maxH = y;
+    if (x > 2000) break;
+    pts.push({x,y,vx,vy,t});
+  }
+  const last = pts[pts.length-1];
+  return { pts, maxH, finalX: last.x, totalT: last.t,
+    impactSpeed: Math.sqrt(last.vx**2 + last.vy**2) };
+}
+
+// ══════════════════════════════
+//  LAUNCH
+// ══════════════════════════════
+function launch() {
+  if (current) trajectories.push({color:current.color, points:current.points, label:`v=${current.v0} θ=${current.angle}°`});
+  stopAnim();
+  const v0=p.speed, angle=p.angle, g=p.grav, drag=p.drag, color=trailColor;
+  const res = computeTrajectory(v0, angle, g, drag);
+  current = {color, v0, angle, points:[], idx:0,
+    maxH:res.maxH, finalX:res.finalX, totalT:res.totalT, impactSpeed:res.impactSpeed};
+  updateLegend();
+
+  function frame() {
+    const step = Math.max(1, Math.floor(res.pts.length/300));
+    for (let s=0; s<step && current.idx<res.pts.length; s++, current.idx++)
+      current.points.push(res.pts[current.idx]);
+    const pt = res.pts[Math.min(current.idx, res.pts.length-1)];
+
+    drawSim();
+    drawTrajectory(current, true);
+
+    const bx = toX(pt.x), by = toY(pt.y);
+    ctx.beginPath(); ctx.arc(bx, by, 7, 0, Math.PI*2);
+    const gr = ctx.createRadialGradient(bx-2,by-2,1,bx,by,7);
+    gr.addColorStop(0,'white'); gr.addColorStop(1,color);
+    ctx.fillStyle=gr; ctx.shadowBlur=20; ctx.shadowColor=color; ctx.fill(); ctx.shadowBlur=0;
+
+    document.getElementById('hudPos').textContent = `x: ${pt.x.toFixed(1)} m   y: ${pt.y.toFixed(1)} m`;
+    document.getElementById('hudVel').textContent = `vx: ${pt.vx.toFixed(1)}   vy: ${pt.vy.toFixed(1)}`;
+    document.getElementById('hudT').textContent   = `t: ${pt.t.toFixed(2)} s`;
+
+    if (current.idx < res.pts.length) {
+      animId = requestAnimationFrame(frame);
+    } else {
+      document.getElementById('stRange').textContent  = res.finalX.toFixed(1)  + ' m';
+      document.getElementById('stHeight').textContent = res.maxH.toFixed(1)    + ' m';
+      document.getElementById('stTime').textContent   = res.totalT.toFixed(2)  + ' s';
+      document.getElementById('stImpact').textContent = res.impactSpeed.toFixed(1) + ' m/s';
+      trajectories.push({color, points:[...current.points], label:`v=${v0} θ=${angle}°`});
+      current=null; updateLegend(); drawSim();
+    }
+  }
+  animId = requestAnimationFrame(frame);
+}
+
+function stopAnim() { if (animId) { cancelAnimationFrame(animId); animId=null; } }
+
+function updateLegend() {
+  const leg = document.getElementById('legend'); leg.innerHTML = '';
+  const all = [...trajectories, ...(current?[{color:current.color,label:`▶ v=${current.v0} θ=${current.angle}°`}]:[])];
+  all.slice(-6).reverse().forEach(tr => {
+    const d=document.createElement('div'); d.className='legend-item';
+    d.innerHTML=`<div class="legend-dot" style="background:${tr.color}"></div><span>${tr.label}</span>`;
+    leg.appendChild(d);
+  });
+}
+
+// ══════════════════════════════
+//  COLOR BUTTONS
+// ══════════════════════════════
+document.querySelectorAll('.color-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.color-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    trailColor = btn.dataset.color;
+    const dot = document.getElementById('colorDot');
+    dot.style.background = trailColor;
+    dot.style.boxShadow = `0 0 6px ${trailColor}`;
+  });
+});
+
+// ══════════════════════════════
+//  CLEAR
+// ══════════════════════════════
+document.getElementById('clearBtn').addEventListener('click', () => {
+  stopAnim(); trajectories=[]; current=null;
+  ['stRange','stHeight','stTime','stImpact'].forEach(id=>document.getElementById(id).textContent='—');
+  ['hudPos','hudVel'].forEach(id=>document.getElementById(id).textContent='');
+  document.getElementById('hudT').textContent='t: —';
+  updateLegend(); drawSim();
+});
+
+document.getElementById('launchBtn').addEventListener('click', launch);
+canvas.addEventListener('click', launch);
+
+document.addEventListener('keydown', e => {
+  if (e.code==='Space'){e.preventDefault();launch();return;}
+  if (e.code==='KeyC'){document.getElementById('clearBtn').click();return;}
+  const asl=document.getElementById('angleSlider'), ssl=document.getElementById('speedSlider');
+  if(e.code==='ArrowLeft') {asl.value=+asl.value-1;asl.dispatchEvent(new Event('input'));}
+  if(e.code==='ArrowRight'){asl.value=+asl.value+1;asl.dispatchEvent(new Event('input'));}
+  if(e.code==='ArrowUp')   {ssl.value=+ssl.value+1;ssl.dispatchEvent(new Event('input'));}
+  if(e.code==='ArrowDown') {ssl.value=+ssl.value-1;ssl.dispatchEvent(new Event('input'));}
+});
+
+// ══════════════════════════════
+//  RESIZE
+// ══════════════════════════════
+function resize() {
+  const ow = wrap.offsetWidth, oh = wrap.offsetHeight;
+  for (const c of [bgCanvas, canvas]) { c.width=ow; c.height=oh; }
+  originX = 60; originY = oh - 60;
+  drawBackground();
+  drawSim();
+}
+window.addEventListener('resize', resize);
+resize();
+</script>
+</body>
+</html>

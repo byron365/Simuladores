@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌱 Mi Jardín</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --sky:    #d0eeff;
+  --ground: #7db84a;
+  --soil:   #8b5e3c;
+  --panel:  #fffdf8;
+  --border: #e8e0d0;
+  --text:   #2c2416;
+  --muted:  #9a8a70;
+  --green:  #3a9a50;
+  --water:  #38b0e8;
+  --sun:    #f5a800;
+  --warm:   #e86030;
+  --seed1:  #f5a800;
+  --seed2:  #e84060;
+  --seed3:  #38b060;
+  --seed4:  #8050e0;
+}
+
+body {
+  background: var(--sky);
+  font-family: 'Nunito', sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--panel);
+  border-bottom: 2px solid var(--border);
+  padding: 0 24px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  z-index: 10;
+}
+
+.logo {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--green);
+}
+
+.day-chip {
+  background: rgba(58,154,80,0.12);
+  color: var(--green);
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 3px 12px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(58,154,80,0.25);
+}
+
+.stage-chip {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+/* ── LAYOUT ── */
+.layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── LEFT CONTROLS ── */
+.controls {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 14px;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: -4px;
+}
+
+/* Seed cards */
+.seed-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.seed-card {
+  border: 2.5px solid var(--border);
+  border-radius: 14px;
+  padding: 8px 6px;
+  cursor: pointer;
+  text-align: center;
+  background: white;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.seed-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.seed-card .seed-emoji { font-size: 1.6rem; line-height: 1; }
+.seed-card .seed-name  { font-size: 0.68rem; font-weight: 800; color: var(--muted); }
+.seed-card.sel { border-color: var(--green); background: rgba(58,154,80,0.08); }
+.seed-card.sel .seed-name { color: var(--green); }
+
+/* Sliders */
+.slider-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slider-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slider-label {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.slider-value {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+  min-width: 36px;
+  text-align: right;
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+}
+input[type=range].water-sl {
+  background: linear-gradient(to right, var(--water) var(--pct, 50%), #ddd var(--pct, 50%));
+}
+input[type=range].sun-sl {
+  background: linear-gradient(to right, var(--sun) var(--pct, 70%), #ddd var(--pct, 70%));
+}
+input[type=range].temp-sl {
+  background: linear-gradient(to right, var(--warm) var(--pct, 53%), #ddd var(--pct, 53%));
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid currentColor;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+input[type=range].water-sl::-webkit-slider-thumb { color: var(--water); border-color: var(--water); }
+input[type=range].sun-sl::-webkit-slider-thumb   { color: var(--sun);   border-color: var(--sun);   }
+input[type=range].temp-sl::-webkit-slider-thumb  { color: var(--warm);  border-color: var(--warm);  }
+
+.slider-hint {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+  width: fit-content;
+}
+.hint-ok   { background: rgba(58,154,80,0.12);  color: var(--green); }
+.hint-warn { background: rgba(232,96,48,0.12);  color: var(--warm);  }
+.hint-mid  { background: rgba(245,168,0,0.12);  color: #c07800;      }
+
+/* Buttons */
+.btn-main {
+  width: 100%;
+  padding: 13px;
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 4px 12px rgba(58,154,80,0.35);
+  margin-top: 2px;
+}
+.btn-main:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(58,154,80,0.45); }
+.btn-main:active { transform: translateY(0); }
+
+.btn-reset {
+  width: 100%;
+  padding: 9px;
+  background: transparent;
+  color: var(--muted);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-reset:hover { border-color: var(--warm); color: var(--warm); }
+
+/* ── SCENE ── */
+.scene {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+#c {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── RIGHT PANEL ── */
+.info {
+  width: 190px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-left: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 14px;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+/* Health display */
+.health-big {
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.health-emoji { font-size: 2.2rem; line-height: 1; }
+.health-label { font-size: 0.7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.health-value { font-size: 1.5rem; font-weight: 900; color: var(--text); line-height: 1; }
+
+/* Stat cards */
+.stat-card {
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stat-card-label { font-size: 0.68rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.stat-card-value { font-size: 1.15rem; font-weight: 900; color: var(--text); }
+
+.stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+/* Progress bar */
+.progress-wrap { display: flex; flex-direction: column; gap: 4px; }
+.progress-label { display: flex; justify-content: space-between; font-size: 0.72rem; font-weight: 700; color: var(--muted); }
+.progress-track { height: 10px; background: #eee; border-radius: 6px; overflow: hidden; }
+.progress-fill  { height: 100%; border-radius: 6px; background: var(--green); transition: width 0.5s ease; }
+
+/* Event log */
+.log-title { font-size: 0.7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.log-scroll { display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto; }
+.log-entry {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 8px;
+  border-radius: 10px;
+  background: rgba(58,154,80,0.08);
+  color: var(--text);
+  line-height: 1.4;
+}
+.log-entry.warn { background: rgba(232,96,48,0.08); color: var(--warm); }
+.log-entry.done { background: rgba(58,154,80,0.15); color: var(--green); }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+a{
+    color: black;
+    font-size: 20px;
+    font-weight: bolder;
+    text-decoration: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo">🌱 Mi Jardín</span>
+  <span class="day-chip" id="dayChip">Día 0</span>
+  <span class="stage-chip" id="stageChip">Elige una planta y empieza 👇</span>
+   <a href="/">INICIO</a>
+</header>
+
+<div class="layout">
+
+  <!-- ── CONTROLES ── -->
+  <div class="controls">
+
+    <span class="section-label">¿Qué quieres plantar?</span>
+    <div class="seed-grid">
+      <div class="seed-card sel" data-seed="sunflower"><span class="seed-emoji">🌻</span><span class="seed-name">Girasol</span></div>
+      <div class="seed-card" data-seed="rose"><span class="seed-emoji">🌹</span><span class="seed-name">Rosa</span></div>
+      <div class="seed-card" data-seed="cactus"><span class="seed-emoji">🌵</span><span class="seed-name">Cactus</span></div>
+      <div class="seed-card" data-seed="tree"><span class="seed-emoji">🌳</span><span class="seed-name">Árbol</span></div>
+    </div>
+
+    <div style="height:1px;background:var(--border);"></div>
+    <span class="section-label">Cuida tu planta</span>
+
+    <!-- Agua -->
+    <div class="slider-block">
+      <div class="slider-top">
+        <span class="slider-label">💧 Agua</span>
+        <span class="slider-value" id="vWater">50%</span>
+      </div>
+      <input type="range" class="water-sl" id="sWater" min="0" max="100" value="50">
+      <span class="slider-hint hint-ok" id="hWater">Justo bien</span>
+    </div>
+
+    <!-- Sol -->
+    <div class="slider-block">
+      <div class="slider-top">
+        <span class="slider-label">☀️ Sol</span>
+        <span class="slider-value" id="vLight">70%</span>
+      </div>
+      <input type="range" class="sun-sl" id="sLight" min="0" max="100" value="70">
+      <span class="slider-hint hint-ok" id="hLight">Mucho sol</span>
+    </div>
+
+    <!-- Temperatura -->
+    <div class="slider-block">
+      <div class="slider-top">
+        <span class="slider-label">🌡️ Calor</span>
+        <span class="slider-value" id="vTemp">22°C</span>
+      </div>
+      <input type="range" class="temp-sl" id="sTemp" min="-5" max="45" value="22">
+      <span class="slider-hint hint-ok" id="hTemp">Temperatura ideal</span>
+    </div>
+
+    <div style="height:1px;background:var(--border);"></div>
+
+    <button class="btn-main" id="btnStart">▶ ¡Plantar!</button>
+    <button class="btn-reset" id="btnReset">🔄 Empezar de nuevo</button>
+
+  </div>
+
+  <!-- ── ESCENA ── -->
+  <div class="scene">
+    <canvas id="c"></canvas>
+  </div>
+
+  <!-- ── INFO ── -->
+  <div class="info">
+
+    <div class="health-big">
+      <span class="health-emoji" id="healthEmoji">🌱</span>
+      <span class="health-label">Salud</span>
+      <span class="health-value" id="healthValue">—</span>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card">
+        <span class="stat-card-label">Altura</span>
+        <span class="stat-card-value" id="mHeight">0 cm</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card-label">Días</span>
+        <span class="stat-card-value" id="mDays">0</span>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Crecimiento</span><span id="pctLabel">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="growBar" style="width:0%"></div></div>
+    </div>
+
+    <div style="height:1px;background:var(--border);"></div>
+
+    <span class="log-title">¿Qué pasó?</span>
+    <div class="log-scroll" id="logScroll">
+      <div class="log-entry">Elige una planta y dale agua, sol y calor 🌿</div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════
+//  PLANTAS
+// ══════════════════════
+const PLANTS = {
+  sunflower: {
+    name:'Girasol', emoji:'🌻', maxH:180, rate:1.3,
+    water:[35,70], light:[60,95], temp:[16,30],
+    stages:['🌰 Semilla','🌱 Brotando','🌿 Creciendo','🌻 ¡Floreciste!'],
+    stageAt:[0, 0.1, 0.45, 0.85],
+    color:{ stem:'#4a8a30', leaf:'#5aaa38', flower:'#f5a800', center:'#7a3a10' },
+    shape:'flower'
+  },
+  rose: {
+    name:'Rosa', emoji:'🌹', maxH:120, rate:0.9,
+    water:[40,65], light:[50,80], temp:[14,26],
+    stages:['🌰 Semilla','🌱 Brotando','🌿 Creciendo','🌹 ¡Floreciste!'],
+    stageAt:[0, 0.1, 0.45, 0.85],
+    color:{ stem:'#2a6020', leaf:'#3a8030', flower:'#e83050', center:'#800020' },
+    shape:'flower'
+  },
+  cactus: {
+    name:'Cactus', emoji:'🌵', maxH:90, rate:0.38,
+    water:[5,22], light:[68,100], temp:[20,44],
+    stages:['🌰 Semilla','🌱 Brotando','🌵 Creciendo','⭐ ¡Maduro!'],
+    stageAt:[0, 0.1, 0.4, 0.85],
+    color:{ stem:'#2a6a20', leaf:'#4a8a30', flower:'#f5d800', center:'#c09010' },
+    shape:'cactus'
+  },
+  tree: {
+    name:'Árbol', emoji:'🌳', maxH:300, rate:0.6,
+    water:[45,78], light:[50,84], temp:[8,26],
+    stages:['🌰 Bellota','🌱 Brotando','🌿 Creciendo','🌳 ¡Árbol grande!'],
+    stageAt:[0, 0.08, 0.38, 0.82],
+    color:{ stem:'#5a3a18', leaf:'#4a8830', flower:'#80b030', center:'#3a6020' },
+    shape:'tree'
+  }
+};
+
+// ══════════════════════
+//  STATE
+// ══════════════════════
+let S = { running:false, day:0, height:0, health:100, stageIdx:0, timer:null, seed:'sunflower', logs:[] };
+
+// ══════════════════════
+//  CANVAS
+// ══════════════════════
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const scene  = document.querySelector('.scene');
+let tick = 0;
+
+function resize() {
+  canvas.width  = scene.offsetWidth;
+  canvas.height = scene.offsetHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ══════════════════════
+//  SLIDERS
+// ══════════════════════
+function updateSliderBg(el) {
+  const pct = ((el.value - el.min) / (el.max - el.min) * 100).toFixed(1) + '%';
+  el.style.setProperty('--pct', pct);
+}
+
+function hint(val, lo, hi, labels) {
+  // labels = [tooLow, low, ok, high, tooHigh]
+  if (val < lo - 20) return [labels[0], 'warn'];
+  if (val < lo)      return [labels[1], 'mid'];
+  if (val > hi + 20) return [labels[4], 'warn'];
+  if (val > hi)      return [labels[3], 'mid'];
+  return [labels[2], 'ok'];
+}
+
+const sliders = [
+  { id:'sWater', val:'vWater', hint:'hWater', fmt: v=>v+'%',
+    labels:['😰 Muy poca agua','🌵 Poca agua','💧 Justo bien','🌊 Mucha agua','💀 Demasiada agua'] },
+  { id:'sLight', val:'vLight', hint:'hLight', fmt: v=>v+'%',
+    labels:['🌑 Sin sol','😴 Poco sol','☀️ Mucho sol','🔆 Demasiado sol','🔥 Quema las hojas'] },
+  { id:'sTemp',  val:'vTemp',  hint:'hTemp',  fmt: v=>v+'°C',
+    labels:['🥶 Mucho frío','❄️ Frío','🌡️ Temperatura ideal','🥵 Caliente','🔥 Demasiado calor'] },
+];
+
+sliders.forEach(({ id, val, hint:hintId, fmt, labels }) => {
+  const sl = document.getElementById(id);
+  const update = () => {
+    const v = +sl.value;
+    document.getElementById(val).textContent = fmt(v);
+    updateSliderBg(sl);
+    const plant = PLANTS[S.seed];
+    const ranges = id==='sWater' ? plant.water : id==='sLight' ? plant.light : plant.temp;
+    const [txt, cls] = hint(v, ranges[0], ranges[1], labels);
+    const hEl = document.getElementById(hintId);
+    hEl.textContent = txt;
+    hEl.className = 'slider-hint hint-' + cls;
+    drawScene();
+  };
+  sl.addEventListener('input', update);
+  update();
+});
+
+// ══════════════════════
+//  SEED SELECTION
+// ══════════════════════
+document.querySelectorAll('.seed-card').forEach(card => {
+  card.addEventListener('click', () => {
+    if (S.running) return;
+    document.querySelectorAll('.seed-card').forEach(c=>c.classList.remove('sel'));
+    card.classList.add('sel');
+    S.seed = card.dataset.seed;
+    // refresh hints
+    sliders.forEach(s => document.getElementById(s.id).dispatchEvent(new Event('input')));
+    drawScene();
+  });
+});
+
+// ══════════════════════
+//  SIMULATION
+// ══════════════════════
+function score() {
+  const p = PLANTS[S.seed];
+  const w = +document.getElementById('sWater').value;
+  const l = +document.getElementById('sLight').value;
+  const t = +document.getElementById('sTemp').value;
+  const f = (val, lo, hi) => {
+    const tol = (hi-lo)*0.55;
+    if (val>=lo && val<=hi) return 1;
+    if (val<lo) return Math.max(0, 1-(lo-val)/tol);
+    return Math.max(0, 1-(val-hi)/tol);
+  };
+  return f(w,p.water[0],p.water[1])*0.38 + f(l,p.light[0],p.light[1])*0.33 + f(t,p.temp[0],p.temp[1])*0.29;
+}
+
+function step() {
+  if (!S.running) return;
+  S.day++;
+  const sc  = score();
+  const p   = PLANTS[S.seed];
+
+  S.health  = Math.max(0, Math.min(100, S.health + (sc - 0.5) * 10));
+  if (S.health <= 0) { plantDied(); return; }
+
+  S.height = Math.min(p.maxH, S.height + p.rate * sc * (S.health/100));
+  const pct = S.height / p.maxH;
+
+  // Stage check
+  const newStage = p.stageAt.reduce((a,v,i)=> pct>=v?i:a, 0);
+  if (newStage > S.stageIdx) {
+    S.stageIdx = newStage;
+    addLog(p.stages[S.stageIdx], false);
+  }
+
+  // Warnings every 5 days
+  if (S.day % 5 === 0 && sc < 0.55) {
+    const w=+document.getElementById('sWater').value;
+    const l=+document.getElementById('sLight').value;
+    const t=+document.getElementById('sTemp').value;
+    if (w < p.water[0]-10) addLog('💧 ¡Necesita más agua!', true);
+    else if (w > p.water[1]+10) addLog('🌊 ¡Demasiada agua!', true);
+    else if (l < p.light[0]-10) addLog('☀️ ¡Le falta más sol!', true);
+    else if (t < p.temp[0]-5)   addLog('🥶 ¡Hace mucho frío!', true);
+    else if (t > p.temp[1]+8)   addLog('🔥 ¡Hace mucho calor!', true);
+  }
+
+  if (pct >= 1) {
+    addLog('🎉 ¡Tu ' + p.name + ' está completamente crecida!', false, true);
+    stop(); return;
+  }
+
+  updateUI(sc, pct);
+  S.timer = setTimeout(step, 420);
+}
+
+function plantDied() {
+  S.running = false;
+  addLog('😢 Tu planta no sobrevivió…', true);
+  document.getElementById('btnStart').textContent = '▶ ¡Plantar!';
+  document.getElementById('stageChip').textContent = '💀 Planta muerta';
+  updateUI(0, S.height/PLANTS[S.seed].maxH);
+}
+
+function stop() {
+  S.running = false;
+  clearTimeout(S.timer);
+  document.getElementById('btnStart').textContent = '▶ ¡Plantar!';
+}
+
+function addLog(msg, warn=false, done=false) {
+  S.logs.unshift({ msg, warn, done });
+  if (S.logs.length > 15) S.logs.pop();
+  const el = document.getElementById('logScroll');
+  el.innerHTML = S.logs.map(e =>
+    `<div class="log-entry ${e.done?'done':e.warn?'warn':''}">${e.msg}</div>`
+  ).join('');
+}
+
+function updateUI(sc, pct) {
+  const p = PLANTS[S.seed];
+  const h = Math.round(S.health);
+
+  document.getElementById('dayChip').textContent   = 'Día ' + S.day;
+  document.getElementById('stageChip').textContent = p.stages[S.stageIdx];
+  document.getElementById('mHeight').textContent   = S.height.toFixed(1) + ' cm';
+  document.getElementById('mDays').textContent     = S.day;
+  document.getElementById('pctLabel').textContent  = Math.round(pct*100) + '%';
+  document.getElementById('growBar').style.width   = (pct*100) + '%';
+  document.getElementById('growBar').style.background = pct > 0.85 ? '#f5a800' : '#3a9a50';
+  document.getElementById('healthValue').textContent  = h;
+  document.getElementById('healthEmoji').textContent  =
+    h > 75 ? '😄' : h > 50 ? '😊' : h > 30 ? '😟' : '😰';
+}
+
+// Buttons
+document.getElementById('btnStart').addEventListener('click', () => {
+  if (S.running) { stop(); document.getElementById('btnStart').textContent='▶ ¡Plantar!'; return; }
+  S.running = true;
+  document.getElementById('btnStart').textContent = '⏸ Pausar';
+  document.getElementById('stageChip').textContent = PLANTS[S.seed].stages[0];
+  S.timer = setTimeout(step, 420);
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  stop();
+  Object.assign(S, { day:0, height:0, health:100, stageIdx:0, logs:[] });
+  document.getElementById('btnStart').textContent = '▶ ¡Plantar!';
+  document.getElementById('dayChip').textContent  = 'Día 0';
+  document.getElementById('stageChip').textContent= 'Elige una planta y empieza 👇';
+  document.getElementById('mHeight').textContent  = '0 cm';
+  document.getElementById('mDays').textContent    = '0';
+  document.getElementById('pctLabel').textContent = '0%';
+  document.getElementById('growBar').style.width  = '0%';
+  document.getElementById('healthValue').textContent = '—';
+  document.getElementById('healthEmoji').textContent = '🌱';
+  document.getElementById('logScroll').innerHTML  = '<div class="log-entry">Elige una planta y dale agua, sol y calor 🌿</div>';
+  drawScene();
+});
+
+// ══════════════════════
+//  DRAWING
+// ══════════════════════
+function drawScene() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const p   = PLANTS[S.seed];
+  const pct = S.height / p.maxH;
+  const light = +document.getElementById('sLight').value;
+  const water = +document.getElementById('sWater').value;
+  const temp  = +document.getElementById('sTemp').value;
+  const groundY = H * 0.72;
+
+  // ── SKY ──
+  const br = light / 100;
+  const isNight = light < 20;
+  const skTop = isNight ? '#0e1828' : blend('#c8e4f8','#5aaad8', br*0.6);
+  const skBot = isNight ? '#1a2840' : blend('#dceef8','#90c8e8', br*0.5);
+  const skG = ctx.createLinearGradient(0,0,0,groundY);
+  skG.addColorStop(0, skTop); skG.addColorStop(1, skBot);
+  ctx.fillStyle = skG; ctx.fillRect(0,0,W,groundY);
+
+  // ── SUN / MOON ──
+  if (!isNight) {
+    const sx=W*0.82, sy=H*0.11, sr=24+br*12;
+    const sg=ctx.createRadialGradient(sx,sy,0,sx,sy,sr*2.8);
+    sg.addColorStop(0,`rgba(255,220,80,${0.25+br*0.3})`); sg.addColorStop(1,'transparent');
+    ctx.fillStyle=sg; ctx.fillRect(0,0,W,groundY);
+    ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,${200+br*30},60,0.9)`; ctx.fill();
+    // sun rays
+    if (br > 0.5) {
+      for (let i=0;i<8;i++) {
+        const a = i/8*Math.PI*2 + tick*0.008;
+        ctx.beginPath(); ctx.moveTo(sx+Math.cos(a)*(sr+4),sy+Math.sin(a)*(sr+4));
+        ctx.lineTo(sx+Math.cos(a)*(sr+14+br*8),sy+Math.sin(a)*(sr+14+br*8));
+        ctx.strokeStyle=`rgba(255,220,80,${br*0.55})`; ctx.lineWidth=2; ctx.stroke();
+      }
+    }
+  } else {
+    ctx.beginPath(); ctx.arc(W*0.82,H*0.1,20,0,Math.PI*2);
+    ctx.fillStyle='rgba(220,230,255,0.85)'; ctx.fill();
+    if (!canvas._s) canvas._s=Array.from({length:50},()=>({x:Math.random(),y:Math.random()*0.62,r:Math.random()*1.3+0.3,a:Math.random()}));
+    canvas._s.forEach(s=>{
+      ctx.beginPath(); ctx.arc(s.x*W,s.y*groundY,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${s.a*0.75})`; ctx.fill();
+    });
+  }
+
+  // ── CLOUDS ──
+  if (water>38 && !isNight) {
+    const ca = Math.min(0.65, (water-38)/75);
+    ctx.save(); ctx.globalAlpha=ca;
+    [[0.18,0.15,38],[0.5,0.07,50],[0.76,0.18,32]].forEach(([fx,fy,r])=>{
+      ctx.beginPath();
+      ctx.arc(W*fx,H*fy,r,0,Math.PI*2); ctx.arc(W*fx+r*.75,H*fy-r*.2,r*.65,0,Math.PI*2);
+      ctx.arc(W*fx-r*.6,H*fy-r*.15,r*.55,0,Math.PI*2);
+      ctx.fillStyle='#fff'; ctx.fill();
+    }); ctx.restore();
+  }
+
+  // ── RAIN ──
+  if (water>72) {
+    const ri=(water-72)/28;
+    if(!canvas._r)canvas._r=Array.from({length:50},()=>({x:Math.random(),y:Math.random(),s:.5+Math.random()*.6}));
+    canvas._r.forEach(r=>{
+      r.y+=.009*r.s; if(r.y>1)r.y=-0.05;
+      ctx.beginPath(); ctx.moveTo(r.x*W,r.y*groundY); ctx.lineTo(r.x*W-2,r.y*groundY+12*r.s);
+      ctx.strokeStyle=`rgba(80,160,210,${ri*.55})`; ctx.lineWidth=.9; ctx.stroke();
+    });
+  }
+
+  // ── SNOW ──
+  if (temp<=2) {
+    const si=Math.min(1,(2-temp)/14);
+    if(!canvas._sn)canvas._sn=Array.from({length:30},()=>({x:Math.random(),y:Math.random(),s:1.5+Math.random()*2}));
+    canvas._sn.forEach(s=>{
+      s.y+=.0018; s.x+=Math.sin(tick*.012+s.s)*.0008; if(s.y>1)s.y=0;
+      ctx.beginPath(); ctx.arc(s.x*W,s.y*groundY,s.s,0,Math.PI*2);
+      ctx.fillStyle=`rgba(220,235,255,${si*.8})`; ctx.fill();
+    });
+    ctx.fillStyle=`rgba(210,228,248,${si*.2})`; ctx.fillRect(0,0,W,H);
+  }
+
+  // ── HEAT SHIMMER ──
+  if (temp>38) {
+    const hi=(temp-38)/9;
+    ctx.fillStyle=`rgba(255,140,40,${hi*.1})`; ctx.fillRect(0,0,W,H);
+  }
+
+  // ── GRASS ── 
+  ctx.fillStyle='#6ab840';
+  ctx.fillRect(0, groundY-8, W, 10);
+  // grass blades
+  ctx.strokeStyle='#4a9a28'; ctx.lineWidth=1.5;
+  for(let x=10;x<W;x+=18){
+    const h2=6+Math.sin(x*.3)*4;
+    const sw=Math.sin(tick*.02+x*.05)*2;
+    ctx.beginPath(); ctx.moveTo(x,groundY-4); ctx.quadraticCurveTo(x+sw,groundY-4-h2/2,x+sw*1.5,groundY-4-h2);
+    ctx.stroke();
+  }
+
+  // ── GROUND ──
+  const gg=ctx.createLinearGradient(0,groundY,0,H);
+  gg.addColorStop(0,'#8b5e3c'); gg.addColorStop(0.3,'#6b4428'); gg.addColorStop(1,'#4a2c14');
+  ctx.fillStyle=gg; ctx.fillRect(0,groundY,W,H-groundY);
+  // soil texture
+  ctx.globalAlpha=0.06;
+  for(let i=1;i<4;i++){ ctx.fillStyle='#000'; ctx.fillRect(0,groundY+i*(H-groundY)/4,W,2); }
+  ctx.globalAlpha=1;
+
+  // ── PLANT ──
+  const bx=W/2, by=groundY;
+  if (S.health<=0) { drawDead(bx,by); }
+  else if (S.height<0.5) { drawSeed(bx,by); }
+  else {
+    if (p.shape==='cactus') drawCactus(bx,by,pct,p,S.health);
+    else if (p.shape==='tree') drawTree(bx,by,pct,p,S.health);
+    else drawFlowerPlant(bx,by,pct,p,S.stageIdx,S.health);
+  }
+}
+
+// ── PLANT SHAPES ──
+function sway(pct) { return Math.sin(tick*.022)*3.5*Math.min(pct*2,1); }
+function lp()      { return tick*.04; }
+
+function hC(hex,h) {
+  if(h>65) return hex;
+  return blend(hex,'#8a7050',((65-h)/65)*.6);
+}
+
+function drawSeed(bx,by) {
+  ctx.beginPath(); ctx.ellipse(bx,by-5,8,5,0,0,Math.PI*2);
+  ctx.fillStyle='#8a5822'; ctx.fill();
+  ctx.strokeStyle='#5a3810'; ctx.lineWidth=1.5; ctx.stroke();
+}
+
+function drawDead(bx,by) {
+  ctx.save(); ctx.globalAlpha=0.4;
+  ctx.strokeStyle='#907050'; ctx.lineWidth=3; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx-10,by-28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx,by-10); ctx.lineTo(bx+12,by-22); ctx.stroke();
+  ctx.restore();
+}
+
+function drawFlowerPlant(bx,by,pct,p,stage,health) {
+  const H=canvas.height;
+  const mh=H*.65*Math.min(pct*1.4,1);
+  const sw=sway(pct);
+  const tipX=bx+sw, tipY=by-mh;
+  const c1x=bx+sw*.2, c1y=by-mh*.35, c2x=bx+sw*.65, c2y=by-mh*.68;
+  const stemW=Math.max(2,5.5*Math.min(pct*1.5,1));
+
+  // stem
+  ctx.beginPath(); ctx.moveTo(bx,by);
+  ctx.bezierCurveTo(c1x,c1y,c2x,c2y,tipX,tipY);
+  ctx.strokeStyle=hC(p.color.stem,health); ctx.lineWidth=stemW; ctx.lineCap='round'; ctx.stroke();
+
+  // leaves
+  if (stage>=1) {
+    const nl=Math.min(2+stage*2, 8);
+    for(let i=0;i<nl;i++){
+      const t=(i+1)/(nl+2);
+      const lx=bez(bx,c1x,c2x,tipX,t), ly=bez(by,c1y,c2y,tipY,t);
+      const side=i%2===0?-1:1;
+      const sz=(12+pct*24)*(0.7+0.3*Math.sin(lp()+i));
+      leaf(lx,ly,side,sz,p.color.leaf,health,t);
+    }
+  }
+
+  // flower
+  if (stage>=3 && pct>0.8) {
+    const fs=14+pct*18;
+    flower(tipX,tipY-fs*.25,fs, p.color.flower, p.color.center, health);
+  }
+}
+
+function drawCactus(bx,by,pct,p,health) {
+  const H=canvas.height;
+  const h=H*.46*pct, w=Math.max(6,13*Math.min(pct*1.5,1));
+
+  const bg=ctx.createLinearGradient(bx-w,0,bx+w,0);
+  bg.addColorStop(0,hC(darken(p.color.stem,10),health));
+  bg.addColorStop(.45,hC(p.color.leaf,health));
+  bg.addColorStop(1,hC(darken(p.color.stem,10),health));
+  ctx.beginPath(); ctx.roundRect(bx-w,by-h,w*2,h,w*.7);
+  ctx.fillStyle=bg; ctx.fill();
+
+  // ribs
+  for(let i=1;i<4;i++){
+    const rx=bx-w+(i/4)*w*2;
+    ctx.beginPath(); ctx.moveTo(rx,by); ctx.lineTo(rx,by-h);
+    ctx.strokeStyle='rgba(0,0,0,0.07)'; ctx.lineWidth=.7; ctx.stroke();
+  }
+  // arms
+  if(pct>.35){
+    [-1,1].forEach(s=>{
+      const ay=by-h*.5, al=h*.28;
+      ctx.beginPath(); ctx.moveTo(bx+s*w,ay); ctx.lineTo(bx+s*(w+al*.9),ay); ctx.lineTo(bx+s*(w+al*.9),ay-al*.65);
+      ctx.strokeStyle=hC(p.color.leaf,health); ctx.lineWidth=w*.8; ctx.lineCap='round'; ctx.stroke();
+    });
+  }
+  // spines
+  [[0,.2],[0,.45],[0,.7],[1,.3],[1,.6],[-1,.3],[-1,.6]].forEach(([ox,oy])=>{
+    const sx=bx+ox*w, sy=by-oy*h;
+    ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(sx+Math.sign(ox||1)*6,sy+1);
+    ctx.strokeStyle='rgba(200,185,120,0.65)'; ctx.lineWidth=.9; ctx.stroke();
+  });
+  if(pct>.85) flower(bx,by-h-8,9,p.color.flower,p.color.center,health);
+}
+
+function drawTree(bx,by,pct,p,health) {
+  const H=canvas.height;
+  const th=H*.46*pct, tw=Math.max(5,10+13*pct), sw=sway(pct)*.7;
+
+  // trunk
+  const tg=ctx.createLinearGradient(bx-tw,0,bx+tw,0);
+  tg.addColorStop(0,hC(p.color.stem,health)); tg.addColorStop(.5,hC(lighten(p.color.stem,15),health)); tg.addColorStop(1,hC(p.color.stem,health));
+  ctx.beginPath();
+  ctx.moveTo(bx-tw,by); ctx.bezierCurveTo(bx-tw,by-th*.5,bx-tw*.4+sw*.3,by-th*.8,bx+sw*.5,by-th);
+  ctx.bezierCurveTo(bx+tw*.4+sw*.3,by-th*.8,bx+tw,by-th*.5,bx+tw,by);
+  ctx.fillStyle=tg; ctx.fill();
+
+  // canopy
+  if(pct>.06){
+    const layers=Math.min(4,Math.floor(pct*5+1));
+    for(let l=layers;l>=0;l--){
+      const cy=by-th*(1+l*.1);
+      const cr=(th*.38+l*th*.06)*Math.min(pct*1.6,1);
+      const wo=Math.sin(lp()+l*.8)*3;
+      const lc=l%2===0?p.color.leaf:lighten(p.color.leaf,12);
+      ctx.beginPath(); ctx.ellipse(bx+sw*.8+wo*.7,cy,cr*.92,cr*.75,0,0,Math.PI*2);
+      ctx.fillStyle=hC(lc,health); ctx.globalAlpha=.92; ctx.fill(); ctx.globalAlpha=1;
+    }
+  }
+}
+
+function leaf(x,y,side,size,color,health,t) {
+  if(size<3) return;
+  ctx.save(); ctx.translate(x,y); ctx.rotate(side*(0.44+Math.sin(lp()+t*4)*.06));
+  ctx.beginPath(); ctx.moveTo(0,0);
+  ctx.bezierCurveTo(side*size*.48,-size*.26,side*size*.9,-size*.46,side*size*.78,-size*.96);
+  ctx.bezierCurveTo(side*size*.38,-size*.62,side*size*.18,-size*.28,0,0);
+  ctx.fillStyle=hC(color,health); ctx.globalAlpha=.88; ctx.fill(); ctx.globalAlpha=1;
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(side*size*.5,-size*.55);
+  ctx.strokeStyle=hC(darken(color,25),health); ctx.lineWidth=.7; ctx.globalAlpha=.5; ctx.stroke(); ctx.globalAlpha=1;
+  ctx.restore();
+}
+
+function flower(x,y,size,fc,cc,health) {
+  const petals=12;
+  for(let i=0;i<petals;i++){
+    const a=(i/petals)*Math.PI*2+tick*.006;
+    ctx.save(); ctx.translate(x,y); ctx.rotate(a);
+    ctx.beginPath(); ctx.ellipse(0,-size*.68,size*.18,size*.48,0,0,Math.PI*2);
+    ctx.fillStyle=hC(fc,health); ctx.globalAlpha=.9; ctx.fill(); ctx.globalAlpha=1; ctx.restore();
+  }
+  ctx.beginPath(); ctx.arc(x,y,size*.26,0,Math.PI*2);
+  ctx.fillStyle=hC(cc,health); ctx.fill();
+}
+
+// ── COLOR HELPERS ──
+function blend(c1,c2,t){
+  const [r1,g1,b1]=pc(c1),[r2,g2,b2]=pc(c2);
+  return `rgb(${~~(r1+(r2-r1)*t)},${~~(g1+(g2-g1)*t)},${~~(b1+(b2-b1)*t)})`;
+}
+function pc(h){
+  h=h.replace('#','');
+  if(h.startsWith('rgb')){const m=h.match(/\d+/g);return[+m[0],+m[1],+m[2]];}
+  if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  const n=parseInt(h,16);return[(n>>16)&255,(n>>8)&255,n&255];
+}
+function darken(h,a){const[r,g,b]=pc(h);return `rgb(${Math.max(0,r-a)},${Math.max(0,g-a)},${Math.max(0,b-a)})`;}
+function lighten(h,a){const[r,g,b]=pc(h);return `rgb(${Math.min(255,r+a)},${Math.min(255,g+a)},${Math.min(255,b+a)})`;}
+function bez(p0,p1,p2,p3,t){return (1-t)**3*p0+3*(1-t)**2*t*p1+3*(1-t)*t**2*p2+t**3*p3;}
+
+// ── ANIMATION ──
+function loop(){tick++;drawScene();requestAnimationFrame(loop);}
+loop();
+</script>
+</body>
+</html>

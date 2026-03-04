@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🚗 ¡Simulador de Tráfico!</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --sky:#87CEEB; --panel:#fff8ee; --border:#ffe0b0;
+  --green:#22cc55; --yellow:#ffcc00; --red:#ff3344;
+  --text:#2a1a08; --muted:#9a8870;
+}
+body{
+  background:var(--sky);
+  font-family:'Nunito',sans-serif;
+  height:100vh;
+  display:grid;
+  grid-template-rows:56px 1fr;
+  overflow:hidden;
+  user-select:none;
+}
+header{
+  background:var(--panel);border-bottom:3px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:16px;
+  box-shadow:0 3px 10px rgba(0,0,0,0.1);z-index:10;
+}
+.logo{font-size:1.3rem;font-weight:900;color:#e84040;}
+.score-chip{
+  background:#fff0d0;border:2px solid var(--border);
+  border-radius:20px;padding:3px 14px;
+  font-size:.85rem;font-weight:800;color:var(--text);
+}
+.score-chip span{color:#e84040;}
+.layout{display:grid;grid-template-columns:180px 1fr 180px;overflow:hidden;}
+.panel{
+  background:var(--panel);display:flex;flex-direction:column;
+  padding:14px 12px;gap:10px;overflow-y:auto;
+  border-right:3px solid var(--border);
+}
+.panel.right{border-right:none;border-left:3px solid var(--border);}
+.panel-title{font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding-bottom:6px;border-bottom:2px solid var(--border);}
+.ctrl{display:flex;flex-direction:column;gap:4px;}
+.ctrl-label{display:flex;justify-content:space-between;align-items:center;}
+.ctrl-name{font-size:.88rem;font-weight:800;color:var(--text);}
+.ctrl-val{font-size:.82rem;font-weight:800;color:#e84040;}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:10px;border-radius:6px;outline:none;cursor:pointer;
+  background:linear-gradient(to right,#e84040 var(--pct,50%),#ddd var(--pct,50%));
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:white;
+  border:3px solid #e84040;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.2);
+}
+input[type=range].green-sl{background:linear-gradient(to right,var(--green) var(--pct,50%),#ddd var(--pct,50%));}
+input[type=range].green-sl::-webkit-slider-thumb{border-color:var(--green);}
+input[type=range].yellow-sl{background:linear-gradient(to right,var(--yellow) var(--pct,50%),#ddd var(--pct,50%));}
+input[type=range].yellow-sl::-webkit-slider-thumb{border-color:var(--yellow);}
+.btn{
+  width:100%;padding:11px;border:none;border-radius:12px;
+  font-family:'Nunito',sans-serif;font-size:1rem;font-weight:900;
+  cursor:pointer;transition:all .15s;
+}
+.btn-start{background:var(--green);color:white;box-shadow:0 4px 0 #1a9940;}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 6px 0 #1a9940;}
+.btn-start:active{transform:translateY(2px);box-shadow:0 2px 0 #1a9940;}
+.btn-reset{background:#ff6b35;color:white;box-shadow:0 4px 0 #c04020;}
+.btn-reset:hover{transform:translateY(-2px);}
+.btn-chaos{background:#cc44cc;color:white;box-shadow:0 4px 0 #882288;font-size:.9rem;}
+.btn-chaos:hover{transform:translateY(-2px);}
+.tog-row{display:flex;gap:5px;flex-wrap:wrap;}
+.tog{
+  flex:1;padding:7px 4px;border:2.5px solid var(--border);border-radius:10px;background:white;
+  font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:800;
+  color:var(--muted);cursor:pointer;text-align:center;transition:all .15s;
+}
+.tog.on{background:#fff0d0;border-color:#e84040;color:#e84040;}
+.stat-card{
+  background:white;border:2.5px solid var(--border);border-radius:12px;padding:10px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+.stat-emoji{font-size:1.5rem;line-height:1;}
+.stat-num{font-size:1.4rem;font-weight:900;color:var(--text);line-height:1;}
+.stat-label{font-size:.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.light-box{
+  background:#222;border-radius:10px;padding:8px;
+  display:flex;flex-direction:column;align-items:center;gap:5px;border:2px solid #444;
+}
+.light-row{display:flex;gap:8px;justify-content:center;}
+.bulb{width:18px;height:18px;border-radius:50%;background:#333;transition:all .3s;}
+.bulb.on-red{background:var(--red);box-shadow:0 0 10px var(--red);}
+.bulb.on-yellow{background:var(--yellow);box-shadow:0 0 10px var(--yellow);}
+.bulb.on-green{background:var(--green);box-shadow:0 0 10px var(--green);}
+.light-label{font-size:.65rem;font-weight:800;color:#aaa;letter-spacing:.08em;}
+.light-timer{font-family:monospace;font-size:.85rem;font-weight:900;color:white;text-align:center;}
+.div{height:2px;background:var(--border);border-radius:2px;}
+.scene{position:relative;overflow:hidden;}
+#c{position:absolute;inset:0;width:100%;height:100%;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+a{
+    color: black;
+    font-size: 20px;
+    font-weight: bolder;
+    text-decoration: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo">🚗 ¡Tráfico Loco!</span>
+  <span class="score-chip">💥 Choques: <span id="hCrashes">0</span></span>
+  <span class="score-chip">🚗 Autos: <span id="hCars">0</span></span>
+  <span class="score-chip">✅ Cruzaron: <span id="hPassed">0</span></span>
+   <a href="/">INICIO</a>
+</header>
+
+<div class="layout">
+  <!-- LEFT -->
+  <div class="panel">
+    <div class="panel-title">⚙️ Controles</div>
+    <div class="ctrl">
+      <div class="ctrl-label"><span class="ctrl-name">🚗 Velocidad</span><span class="ctrl-val" id="vSpeed">5</span></div>
+      <input type="range" id="sSpeed" min="1" max="10" value="5">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-label"><span class="ctrl-name">🚦 Verde (seg)</span><span class="ctrl-val" id="vGreen">5</span></div>
+      <input type="range" class="green-sl" id="sGreen" min="2" max="12" value="5">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-label"><span class="ctrl-name">🔴 Rojo (seg)</span><span class="ctrl-val" id="vRed">5</span></div>
+      <input type="range" id="sRed" min="2" max="12" value="5">
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-label"><span class="ctrl-name">🌊 Cantidad</span><span class="ctrl-val" id="vDensity">5</span></div>
+      <input type="range" class="yellow-sl" id="sDensity" min="1" max="10" value="5">
+    </div>
+    <div class="div"></div>
+    <div class="tog-row">
+      <button class="tog" id="tRain">🌧️ Lluvia</button>
+      <button class="tog" id="tNight">🌙 Noche</button>
+    </div>
+    <div class="div"></div>
+    <button class="btn btn-start" id="btnStart">▶ ¡Jugar!</button>
+    <button class="btn btn-chaos" id="btnChaos">🌀 ¡Caos!</button>
+    <button class="btn btn-reset" id="btnReset">🔄 Reiniciar</button>
+  </div>
+
+  <!-- CANVAS -->
+  <div class="scene" id="sceneWrap"><canvas id="c"></canvas></div>
+
+  <!-- RIGHT -->
+  <div class="panel right">
+    <div class="panel-title">📊 Marcador</div>
+    <div class="stats-grid">
+      <div class="stat-card"><span class="stat-emoji">💥</span><span class="stat-num" id="sCrashes">0</span><span class="stat-label">Choques</span></div>
+      <div class="stat-card"><span class="stat-emoji">✅</span><span class="stat-num" id="sPassed">0</span><span class="stat-label">Cruzaron</span></div>
+      <div class="stat-card"><span class="stat-emoji">🚗</span><span class="stat-num" id="sCars">0</span><span class="stat-label">En ruta</span></div>
+      <div class="stat-card"><span class="stat-emoji">⏱️</span><span class="stat-num" id="sTime">0</span><span class="stat-label">Segundos</span></div>
+    </div>
+    <div class="div"></div>
+    <div class="panel-title">🚦 Semáforos</div>
+    <div class="light-box">
+      <div class="light-label">NORTE · SUR</div>
+      <div class="light-row">
+        <div class="bulb" id="lNred"></div>
+        <div class="bulb" id="lNyellow"></div>
+        <div class="bulb" id="lNgreen"></div>
+      </div>
+      <div class="light-timer" id="ltNS">—</div>
+    </div>
+    <div class="light-box">
+      <div class="light-label">ESTE · OESTE</div>
+      <div class="light-row">
+        <div class="bulb" id="lEred"></div>
+        <div class="bulb" id="lEyellow"></div>
+        <div class="bulb" id="lEgreen"></div>
+      </div>
+      <div class="light-timer" id="ltEW">—</div>
+    </div>
+    <div class="div"></div>
+    <div class="panel-title">📜 Eventos</div>
+    <div style="display:flex;flex-direction:column;gap:3px;" id="eventLog">
+      <div style="font-size:.75rem;font-weight:700;color:var(--muted);">¡Pulsa Jugar para empezar!</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  CANVAS
+// ══════════════════════════════════════
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('sceneWrap');
+
+function resize(){ canvas.width=wrap.offsetWidth; canvas.height=wrap.offsetHeight; }
+window.addEventListener('resize', () => { resize(); draw(); });
+resize();
+
+// ══════════════════════════════════════
+//  SIMULATION STATE
+// ══════════════════════════════════════
+let running=false, animId=null, lastTs=null;
+let simSec=0, crashes=0, passed=0, frame=0;
+let vehicles=[], explosions=[];
+let conditions={ rain:false, night:false };
+let spawnAcc=0;
+let events=[];
+
+// Traffic light state
+// ns: controls North↓ and South↑ traffic
+// ew: controls East→ and West← traffic
+let tl={ ns:'green', ew:'red', phase:0, nsRemain:0, ewRemain:0 };
+
+const G  = id => document.getElementById(id);
+const gv = id => +G(id).value;
+
+// ══════════════════════════════════════
+//  GEOMETRY  (recomputed each frame)
+// ══════════════════════════════════════
+function geo(){
+  const W=canvas.width, H=canvas.height;
+  const cx=W/2, cy=H/2;
+  const rw=52; // half road width
+  return { W, H, cx, cy, rw };
+}
+
+// ══════════════════════════════════════
+//  SLIDERS
+// ══════════════════════════════════════
+['sSpeed','sGreen','sRed','sDensity'].forEach(id=>{
+  const sl=G(id);
+  const valId={sSpeed:'vSpeed',sGreen:'vGreen',sRed:'vRed',sDensity:'vDensity'}[id];
+  const upd=()=>{
+    G(valId).textContent=sl.value;
+    const pct=((sl.value-sl.min)/(sl.max-sl.min)*100).toFixed(1)+'%';
+    sl.style.setProperty('--pct',pct);
+  };
+  sl.addEventListener('input',upd); upd();
+});
+
+// ══════════════════════════════════════
+//  TOGGLE CONDITIONS
+// ══════════════════════════════════════
+['tRain','tNight'].forEach(id=>{
+  G(id).addEventListener('click',()=>{
+    G(id).classList.toggle('on');
+    const map={tRain:'rain',tNight:'night'};
+    conditions[map[id]]=G(id).classList.contains('on');
+  });
+});
+
+// ══════════════════════════════════════
+//  CAR COLORS
+// ══════════════════════════════════════
+const CAR_COLORS=[
+  '#ff4444','#ff8800','#ffcc00','#44cc44','#4488ff',
+  '#cc44cc','#44cccc','#ff6688','#88cc44','#ff88cc'
+];
+function randColor(){ return CAR_COLORS[Math.floor(Math.random()*CAR_COLORS.length)]; }
+
+// ══════════════════════════════════════
+//  SPAWN
+// ══════════════════════════════════════
+function spawnVehicles(dt){
+  const density=gv('sDensity');
+  spawnAcc += density*0.55*dt;
+  while(spawnAcc>=1){
+    spawnAcc-=1;
+    if(vehicles.length>=45) break;
+    spawnOne();
+  }
+}
+
+function spawnOne(){
+  const { W, H, cx, cy, rw } = geo();
+
+  // Pick a random direction
+  const dirs=['N','S','E','W'];
+  const dir=dirs[Math.floor(Math.random()*4)];
+
+  // Each direction has TWO lanes (one per side of center line)
+  // Lane sign: -1 = left lane from road center, +1 = right lane
+  // We always put the car in the correct lane for its direction
+  const laneOff = rw * 0.38; // distance from road center to lane center
+
+  let x, y, vx, vy;
+  // S = going south (down), spawns at top, uses LEFT half of vertical road (x < cx)
+  // N = going north (up),   spawns at bottom, uses RIGHT half
+  // E = going east  (right),spawns at left,   uses TOP half of horizontal road (y < cy)
+  // W = going west  (left), spawns at right,  uses BOTTOM half
+  if(dir==='S'){ x=cx-laneOff; y=-36; vx=0;  vy=1;  }
+  else if(dir==='N'){ x=cx+laneOff; y=H+36; vx=0;  vy=-1; }
+  else if(dir==='E'){ x=-36; y=cy+laneOff; vx=1;  vy=0;  }
+  else             { x=W+36; y=cy-laneOff; vx=-1; vy=0;  }
+
+  const baseSpd = (28 + Math.random()*18) * (gv('sSpeed')/5);
+
+  vehicles.push({
+    x, y, vx, vy, dir,
+    color:    randColor(),
+    speed:    baseSpd * 0.3,     // start slow
+    maxSpeed: baseSpd,
+    w: 22, h: 32,
+    waiting:  0,
+    crossed:  false,             // has entered the intersection box
+    exited:   false,             // has fully exited the box
+    crashed:  false,
+    crashTimer: 0,
+    id: Math.random(),
+  });
+}
+
+// ══════════════════════════════════════
+//  TRAFFIC LIGHTS
+// ══════════════════════════════════════
+function updateLights(dt){
+  const green  = gv('sGreen');
+  const red    = gv('sRed');
+  const yellow = 1.5;
+  const cycle  = green + yellow + red;  // one full phase
+
+  tl.phase += dt;
+  // Two-phase cycle: [0..cycle) = NS green, [cycle..2*cycle) = EW green
+  if(tl.phase >= 2*cycle) tl.phase -= 2*cycle;
+
+  // ── NS light ──
+  if(tl.phase < green){
+    tl.ns='green';  tl.nsRemain=green-tl.phase;
+  } else if(tl.phase < green+yellow){
+    tl.ns='yellow'; tl.nsRemain=green+yellow-tl.phase;
+  } else if(tl.phase < cycle){
+    tl.ns='red';    tl.nsRemain=cycle-tl.phase;
+  } else if(tl.phase < cycle+red){
+    tl.ns='red';    tl.nsRemain=cycle+red-tl.phase;
+  } else if(tl.phase < cycle+red+yellow){
+    tl.ns='yellow'; tl.nsRemain=cycle+red+yellow-tl.phase;
+  } else {
+    tl.ns='green';  tl.nsRemain=2*cycle-tl.phase;
+  }
+
+  // ── EW light (exactly opposite) ──
+  const ewPhase = (tl.phase + cycle) % (2*cycle);
+  if(ewPhase < green){
+    tl.ew='green';  tl.ewRemain=green-ewPhase;
+  } else if(ewPhase < green+yellow){
+    tl.ew='yellow'; tl.ewRemain=green+yellow-ewPhase;
+  } else if(ewPhase < cycle){
+    tl.ew='red';    tl.ewRemain=cycle-ewPhase;
+  } else if(ewPhase < cycle+red){
+    tl.ew='red';    tl.ewRemain=cycle+red-ewPhase;
+  } else if(ewPhase < cycle+red+yellow){
+    tl.ew='yellow'; tl.ewRemain=cycle+red+yellow-ewPhase;
+  } else {
+    tl.ew='green';  tl.ewRemain=2*cycle-ewPhase;
+  }
+}
+
+// ══════════════════════════════════════
+//  VEHICLE UPDATE  — the smart part
+// ══════════════════════════════════════
+function updateVehicles(dt){
+  const { W, H, cx, cy, rw } = geo();
+  const rainMod = conditions.rain ? 0.72 : 1.0;
+
+  // ── 1. Compute desired speed for each vehicle ──
+  vehicles.forEach(v => {
+    if(v.crashed) return;
+
+    const topSpeed = v.maxSpeed * rainMod;
+
+    // --- Which light controls this vehicle? ---
+    const myLight = (v.dir==='N'||v.dir==='S') ? tl.ns : tl.ew;
+
+    // --- Stop line position (front of car must not cross this while red/yellow) ---
+    // We compute the distance from the car's FRONT to its stop line.
+    // Positive = car is still behind the stop line.
+    const stopMargin = 6;  // px gap to leave in front of stop line
+    let distToStopLine = Infinity;
+
+    if(v.dir==='S'){
+      // front of car = v.y + v.h/2,  stop line = cy - rw - stopMargin
+      distToStopLine = (cy - rw - stopMargin) - (v.y + v.h/2);
+    } else if(v.dir==='N'){
+      // front = v.y - v.h/2,  stop line = cy + rw + stopMargin
+      distToStopLine = (v.y - v.h/2) - (cy + rw + stopMargin);
+    } else if(v.dir==='E'){
+      // front = v.x + v.w/2,  stop line = cx - rw - stopMargin
+      distToStopLine = (cx - rw - stopMargin) - (v.x + v.w/2);
+    } else {
+      // front = v.x - v.w/2,  stop line = cx + rw + stopMargin
+      distToStopLine = (v.x - v.w/2) - (cx + rw + stopMargin);
+    }
+
+    // --- Is the car still approaching the intersection (not yet inside)? ---
+    const approaching = !v.crossed && distToStopLine > -5;
+
+    // --- Should we stop for the red? ---
+    let mustStopForLight = false;
+    if(approaching && (myLight==='red' || myLight==='yellow')){
+      // Only stop if we can actually stop in time (not so close that braking would be too harsh)
+      // Braking distance at current speed: v²/2a  (a = deceleration ≈ 220 px/s²)
+      const decel = 220;
+      const brakeDist = (v.speed*v.speed) / (2*decel) + 4;
+      if(distToStopLine > -2 && distToStopLine < brakeDist + 80){
+        mustStopForLight = true;
+      }
+    }
+
+    // --- Find closest vehicle ahead in same lane ---
+    let minGap = Infinity;  // gap between my front and its rear
+    vehicles.forEach(other => {
+      if(other===v || other.crashed) return;
+
+      // Must be roughly in same lane (perpendicular distance < half road width)
+      const perpDist = Math.abs(v.vx*(other.y-v.y) - v.vy*(other.x-v.x));
+      if(perpDist > 20) return;
+
+      // Must be ahead of me (positive dot product along my direction)
+      const aheadDist = v.vx*(other.x-v.x) + v.vy*(other.y-v.y);
+      if(aheadDist <= 0) return;
+
+      // Gap = center-to-center distance minus half-lengths of both cars
+      const myHalf    = (v.vx!==0  ? v.w  : v.h) / 2;
+      const otherHalf = (other.vx!==0 ? other.w : other.h) / 2;
+      const gap = aheadDist - myHalf - otherHalf;
+      if(gap < minGap) minGap = gap;
+    });
+
+    // --- Desired speed using Intelligent Driver Model (simplified) ---
+    // Safe following distance: minimum headway + speed-dependent gap
+    const minHeadway    = 8;    // px minimum gap
+    const timeHeadway   = 0.55; // seconds  (how many seconds of gap to keep)
+    const safeGap       = minHeadway + v.speed * timeHeadway;
+    const comfortDecel  = 200;  // px/s²
+
+    let desiredSpeed = topSpeed;
+
+    // Slow for vehicle ahead
+    if(minGap < Infinity){
+      if(minGap < 2){
+        desiredSpeed = 0;
+      } else {
+        // Smooth approach: reduce speed proportionally to how close we are
+        const ratio = Math.min(1, (minGap - 2) / safeGap);
+        desiredSpeed = Math.min(desiredSpeed, topSpeed * Math.sqrt(ratio));
+      }
+    }
+
+    // Stop for red light
+    if(mustStopForLight){
+      if(distToStopLine < 2){
+        desiredSpeed = 0;
+      } else {
+        const ratio = Math.min(1, distToStopLine / 60);
+        desiredSpeed = Math.min(desiredSpeed, topSpeed * Math.sqrt(ratio));
+      }
+    }
+
+    // --- Accelerate / brake toward desired speed ---
+    const maxAccel = 90;
+    const maxBrake = 240;
+    if(v.speed < desiredSpeed){
+      v.speed = Math.min(desiredSpeed, v.speed + maxAccel*dt);
+    } else {
+      v.speed = Math.max(desiredSpeed, v.speed - maxBrake*dt);
+    }
+    v.speed = Math.max(0, v.speed);
+
+    if(v.speed < 1) v.waiting += dt; else v.waiting = 0;
+  });
+
+  // ── 2. Move vehicles ──
+  vehicles.forEach(v => {
+    if(v.crashed){ v.crashTimer-=dt; if(v.crashTimer<=0) v.remove=true; return; }
+    v.x += v.vx * v.speed * dt;
+    v.y += v.vy * v.speed * dt;
+
+    // Track intersection state
+    const inBox = v.x>cx-rw && v.x<cx+rw && v.y>cy-rw && v.y<cy+rw;
+    if(inBox && !v.crossed) v.crossed=true;
+
+    // Off screen → remove and count
+    if(v.x < -60 || v.x > W+60 || v.y < -60 || v.y > H+60){
+      if(v.crossed) passed++;
+      v.remove=true;
+    }
+  });
+
+  // ── 3. Crash detection ──
+  // A crash happens only when two cars are very close AND have significant relative velocity
+  // (meaning one ran a light or a following car couldn't brake in time)
+  for(let i=0; i<vehicles.length; i++){
+    if(vehicles[i].crashed) continue;
+    for(let j=i+1; j<vehicles.length; j++){
+      if(vehicles[j].crashed) continue;
+      const a=vehicles[i], b=vehicles[j];
+
+      // Axis-aligned bounding box overlap
+      const overlapX = Math.abs(a.x-b.x) < (a.w/2 + b.w/2 - 2);
+      const overlapY = Math.abs(a.y-b.y) < (a.h/2 + b.h/2 - 2);
+      if(!overlapX || !overlapY) continue;
+
+      // Relative speed (closing velocity)
+      const relVx = a.vx*a.speed - b.vx*b.speed;
+      const relVy = a.vy*a.speed - b.vy*b.speed;
+      const relSpeed = Math.sqrt(relVx*relVx + relVy*relVy);
+
+      // Only crash if cars are actually moving toward each other with some speed
+      // (avoids false positives when two stopped cars are side by side)
+      if(relSpeed < 8) continue;
+
+      // CRASH!
+      a.crashed=true; a.crashTimer=1.8;
+      b.crashed=true; b.crashTimer=1.8;
+      crashes++;
+      spawnExplosion((a.x+b.x)/2, (a.y+b.y)/2);
+      addEvent('💥 ¡Choque!','#ff4444');
+    }
+  }
+
+  // ── 4. Clean up ──
+  vehicles = vehicles.filter(v => !v.remove);
+}
+
+// ══════════════════════════════════════
+//  EXPLOSIONS
+// ══════════════════════════════════════
+function spawnExplosion(x,y){
+  const particles=[];
+  for(let i=0;i<22;i++){
+    const angle=Math.random()*Math.PI*2;
+    const spd=40+Math.random()*80;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle)*spd, vy: Math.sin(angle)*spd,
+      r:  4+Math.random()*8,
+      life: 1,
+      color: ['#ff4400','#ff8800','#ffcc00','#ffffff','#ff2200'][Math.floor(Math.random()*5)],
+    });
+  }
+  explosions.push({ x, y, particles, life:1.4 });
+}
+
+function updateExplosions(dt){
+  explosions.forEach(e=>{
+    e.life -= dt;
+    e.particles.forEach(p=>{
+      p.x += p.vx*dt; p.y += p.vy*dt;
+      p.vy += 110*dt; // gravity
+      p.life -= dt*1.1;
+      p.r *= 0.975;
+    });
+  });
+  explosions = explosions.filter(e=>e.life>0);
+}
+
+// ══════════════════════════════════════
+//  DRAWING
+// ══════════════════════════════════════
+let rainDrops = Array.from({length:80},()=>({x:Math.random(),y:Math.random(),s:.5+Math.random()*.7}));
+
+function draw(){
+  const {W,H,cx,cy,rw} = geo();
+  ctx.clearRect(0,0,W,H);
+  const night = conditions.night;
+
+  // Sky / background
+  ctx.fillStyle = night ? '#0a1428' : '#87CEEB';
+  ctx.fillRect(0,0,W,H);
+
+  // Grass blocks
+  ctx.fillStyle = night ? '#1a3a18' : '#5dbf4e';
+  ctx.fillRect(0,0,cx-rw,cy-rw);
+  ctx.fillRect(cx+rw,0,W-cx-rw,cy-rw);
+  ctx.fillRect(0,cy+rw,cx-rw,H-cy-rw);
+  ctx.fillRect(cx+rw,cy+rw,W-cx-rw,H-cy-rw);
+
+  drawDecorations(cx,cy,rw,W,H,night);
+
+  // Roads
+  ctx.fillStyle = night ? '#222233' : '#555566';
+  ctx.fillRect(0, cy-rw, W, rw*2);
+  ctx.fillRect(cx-rw, 0, rw*2, H);
+
+  // Intersection box (slightly lighter)
+  ctx.fillStyle = night ? '#2a2a3a' : '#60606e';
+  ctx.fillRect(cx-rw, cy-rw, rw*2, rw*2);
+
+  drawMarkings(cx,cy,rw,W,H);
+  drawZebra(cx,cy,rw);
+  drawTrafficLights(cx,cy,rw);
+
+  // Vehicles
+  vehicles.forEach(v => drawCar(v));
+
+  // Explosions
+  explosions.forEach(e => drawExplosion(e));
+
+  // Rain
+  if(conditions.rain){
+    ctx.save(); ctx.globalAlpha=0.4;
+    rainDrops.forEach(r=>{
+      r.y+=.012*r.s; r.x+=.002; if(r.y>1){r.y=0;r.x=Math.random();}
+      ctx.strokeStyle='#a0d0ff'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(r.x*W,r.y*H); ctx.lineTo(r.x*W-3,r.y*H+14*r.s); ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  // Night vignette
+  if(night){
+    const vg=ctx.createRadialGradient(cx,cy,80,cx,cy,Math.max(W,H)*.7);
+    vg.addColorStop(0,'transparent'); vg.addColorStop(1,'rgba(0,0,10,0.6)');
+    ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+  }
+}
+
+function drawDecorations(cx,cy,rw,W,H,night){
+  const trees=[
+    [cx*.32,cy*.3],[cx*.72,cy*.18],[cx*.18,cy*.68],
+    [cx+rw+(W-cx-rw)*.28,cy*.28],[cx+rw+(W-cx-rw)*.72,cy*.58],
+    [cx*.28,cy+rw+(H-cy-rw)*.38],[cx*.68,cy+rw+(H-cy-rw)*.72],
+    [cx+rw+(W-cx-rw)*.38,cy+rw+(H-cy-rw)*.28],[cx+rw+(W-cx-rw)*.72,cy+rw+(H-cy-rw)*.68],
+  ];
+  trees.forEach(([tx,ty])=>{
+    ctx.fillStyle=night?'#3a2810':'#7a4a1a'; ctx.fillRect(tx-3,ty,6,14);
+    ctx.beginPath(); ctx.arc(tx,ty,14,0,Math.PI*2);
+    ctx.fillStyle=night?'#1a3a18':'#3a8a28'; ctx.fill();
+    ctx.beginPath(); ctx.arc(tx,ty-8,10,0,Math.PI*2);
+    ctx.fillStyle=night?'#1e4a1e':'#4aaa34'; ctx.fill();
+  });
+
+  const houses=[
+    [cx*.5,cy*.52],[cx+rw+(W-cx-rw)*.52,cy*.42],
+    [cx*.5,cy+rw+(H-cy-rw)*.52],[cx+rw+(W-cx-rw)*.5,cy+rw+(H-cy-rw)*.5],
+  ];
+  houses.forEach(([hx,hy])=>{
+    ctx.fillStyle=night?'#1e2a18':'#ddbb88'; ctx.fillRect(hx-16,hy-14,32,24);
+    ctx.fillStyle=night?'#3a1a10':'#cc4422';
+    ctx.beginPath(); ctx.moveTo(hx-20,hy-14); ctx.lineTo(hx,hy-28); ctx.lineTo(hx+20,hy-14); ctx.closePath(); ctx.fill();
+    ctx.fillStyle=night?'#0a0a0a':'#8b5e2a'; ctx.fillRect(hx-5,hy,10,12);
+    ctx.fillStyle=night?'rgba(255,240,120,.75)':'rgba(160,220,255,.7)';
+    ctx.fillRect(hx-13,hy-10,8,7); ctx.fillRect(hx+5,hy-10,8,7);
+  });
+}
+
+function drawMarkings(cx,cy,rw,W,H){
+  // Center dashed lines
+  ctx.setLineDash([14,10]); ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(0,cy);   ctx.lineTo(cx-rw,cy);   ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+rw,cy); ctx.lineTo(W,cy);     ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,0);   ctx.lineTo(cx,cy-rw);   ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,cy+rw); ctx.lineTo(cx,H);     ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Edge lines
+  ctx.strokeStyle='rgba(255,255,255,0.28)'; ctx.lineWidth=2;
+  [[0,cy-rw,cx-rw,cy-rw],[cx+rw,cy-rw,W,cy-rw],[0,cy+rw,cx-rw,cy+rw],[cx+rw,cy+rw,W,cy+rw],
+   [cx-rw,0,cx-rw,cy-rw],[cx+rw,0,cx+rw,cy-rw],[cx-rw,cy+rw,cx-rw,H],[cx+rw,cy+rw,cx+rw,H]
+  ].forEach(([x1,y1,x2,y2])=>{ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); });
+
+  // Stop lines (white bar across lane just before intersection)
+  ctx.strokeStyle='rgba(255,255,255,0.7)'; ctx.lineWidth=3;
+  const {cx:_cx,cy:_cy,rw:_rw}={cx,cy,rw};
+  // North approach stop line (southbound cars)
+  ctx.beginPath(); ctx.moveTo(cx-rw,cy-rw-1); ctx.lineTo(cx,cy-rw-1); ctx.stroke();
+  // South approach (northbound)
+  ctx.beginPath(); ctx.moveTo(cx,cy+rw+1); ctx.lineTo(cx+rw,cy+rw+1); ctx.stroke();
+  // West approach (eastbound)
+  ctx.beginPath(); ctx.moveTo(cx-rw-1,cy); ctx.lineTo(cx-rw-1,cy+rw); ctx.stroke();
+  // East approach (westbound)
+  ctx.beginPath(); ctx.moveTo(cx+rw+1,cy-rw); ctx.lineTo(cx+rw+1,cy); ctx.stroke();
+}
+
+function drawZebra(cx,cy,rw){
+  ctx.fillStyle='rgba(255,255,255,0.48)';
+  const sz=8, count=5;
+  for(let i=0;i<count;i++) ctx.fillRect(cx-rw+5+i*(sz+4), cy-rw-20, sz, 14);
+  for(let i=0;i<count;i++) ctx.fillRect(cx-rw+5+i*(sz+4), cy+rw+6,  sz, 14);
+  for(let i=0;i<count;i++) ctx.fillRect(cx-rw-20, cy-rw+5+i*(sz+4), 14, sz);
+  for(let i=0;i<count;i++) ctx.fillRect(cx+rw+6,  cy-rw+5+i*(sz+4), 14, sz);
+}
+
+function drawTrafficLights(cx,cy,rw){
+  // 4 traffic light poles, one per corner
+  const poles=[
+    {x:cx-rw-24, y:cy-rw-24, phase:'ns'}, // top-left  → controls southbound (NS)
+    {x:cx+rw+6,  y:cy-rw-24, phase:'ew'}, // top-right → controls eastbound  (EW)
+    {x:cx-rw-24, y:cy+rw+6,  phase:'ew'}, // bot-left  → controls westbound  (EW)
+    {x:cx+rw+6,  y:cy+rw+6,  phase:'ns'}, // bot-right → controls northbound (NS)
+  ];
+  poles.forEach(({x,y,phase})=>{
+    const p = tl[phase];
+    // Pole
+    ctx.fillStyle='#555'; ctx.fillRect(x+7,y,3,24);
+    // Housing
+    ctx.fillStyle='#111';
+    ctx.beginPath(); ctx.roundRect(x,y-2,18,26,4); ctx.fill();
+    ctx.strokeStyle='#444'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.roundRect(x,y-2,18,26,4); ctx.stroke();
+    // Bulbs: red top, yellow middle, green bottom
+    [['red','#ff3344'],['yellow','#ffcc00'],['green','#22cc55']].forEach(([name,col],i)=>{
+      const on=(name===p);
+      ctx.beginPath(); ctx.arc(x+9, y+5+i*8, 5.5, 0, Math.PI*2);
+      ctx.fillStyle = on ? col : 'rgba(255,255,255,0.08)';
+      if(on){ ctx.shadowBlur=14; ctx.shadowColor=col; }
+      ctx.fill(); ctx.shadowBlur=0;
+    });
+  });
+}
+
+function drawCar(v){
+  if(v.crashed && v.crashTimer<=0) return;
+  ctx.save();
+  ctx.translate(v.x, v.y);
+  const angle = Math.atan2(v.vy, v.vx) + Math.PI/2;
+  ctx.rotate(angle);
+
+  if(v.crashed){
+    ctx.rotate(Math.sin(v.crashTimer*9)*0.28);
+    ctx.globalAlpha = Math.min(1, v.crashTimer/1.2);
+    ctx.fillStyle = '#888';
+  } else {
+    ctx.fillStyle = v.color;
+  }
+
+  const hw=v.w/2, hh=v.h/2;
+
+  // Drop shadow
+  ctx.shadowBlur=8; ctx.shadowColor='rgba(0,0,0,.35)';
+
+  // Body
+  ctx.beginPath(); ctx.roundRect(-hw,-hh,v.w,v.h,5);
+  ctx.fill(); ctx.shadowBlur=0;
+
+  if(!v.crashed){
+    // Windshield
+    ctx.fillStyle='rgba(200,235,255,.55)';
+    ctx.beginPath(); ctx.roundRect(-hw*.6,-hh*.72,v.w*.6,v.h*.3,2); ctx.fill();
+
+    // Wheels
+    ctx.fillStyle='#1a1a1a';
+    [[-hw*1.08,-hh*.52],[hw*.62,-hh*.52],[-hw*1.08,hh*.28],[hw*.62,hh*.28]].forEach(([wx,wy])=>{
+      ctx.beginPath(); ctx.ellipse(wx,wy,3.5,4.5,0,0,Math.PI*2); ctx.fill();
+    });
+
+    // Headlights (front)
+    if(conditions.night){
+      ctx.fillStyle='rgba(255,245,180,.95)';
+      ctx.shadowBlur=14; ctx.shadowColor='rgba(255,240,150,.7)';
+      // Light beam
+      ctx.save(); ctx.globalAlpha=0.08; ctx.fillStyle='#fffde0';
+      ctx.beginPath(); ctx.moveTo(-hw*.55,-hh*.88); ctx.lineTo(-hw*2.5,-hh*4); ctx.lineTo(0,-hh*4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(hw*.55,-hh*.88);  ctx.lineTo(0,-hh*4); ctx.lineTo(hw*2.5,-hh*4); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    } else {
+      ctx.fillStyle='rgba(255,245,180,.75)'; ctx.shadowBlur=0;
+    }
+    ctx.beginPath(); ctx.ellipse(-hw*.52,-hh*.85,3,2,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hw*.52,-hh*.85,3,2,0,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+
+    // Brake lights (when slow/stopped)
+    if(v.speed < v.maxSpeed*0.25){
+      ctx.fillStyle='rgba(255,40,40,.9)';
+      ctx.shadowBlur=7; ctx.shadowColor='#ff3344';
+      ctx.beginPath(); ctx.ellipse(-hw*.52,hh*.85,3,2,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(hw*.52,hh*.85,3,2,0,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur=0;
+    }
+
+    // Roof stripe
+    ctx.fillStyle='rgba(255,255,255,.2)';
+    ctx.fillRect(-hw*.28,-hh*.28,v.w*.28,v.h*.38);
+  }
+
+  ctx.restore();
+}
+
+function drawExplosion(e){
+  e.particles.forEach(p=>{
+    if(p.life<=0) return;
+    ctx.save();
+    ctx.globalAlpha=Math.max(0,p.life);
+    ctx.beginPath(); ctx.arc(p.x,p.y,Math.max(0,p.r),0,Math.PI*2);
+    ctx.fillStyle=p.color; ctx.shadowBlur=10; ctx.shadowColor=p.color;
+    ctx.fill(); ctx.shadowBlur=0;
+    ctx.restore();
+  });
+  if(e.life>0.3){
+    ctx.save(); ctx.globalAlpha=Math.min(1,e.life);
+    ctx.font=`bold ${Math.round(24+e.life*12)}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('💥', e.x, e.y-(1.4-e.life)*28);
+    ctx.restore();
+  }
+}
+
+// ══════════════════════════════════════
+//  UI UPDATES
+// ══════════════════════════════════════
+function updateUI(){
+  G('hCrashes').textContent=crashes; G('sCrashes').textContent=crashes;
+  G('hCars').textContent=vehicles.length; G('sCars').textContent=vehicles.length;
+  G('hPassed').textContent=passed; G('sPassed').textContent=passed;
+  G('sTime').textContent=Math.floor(simSec);
+
+  // Traffic light bulbs
+  ['NS','EW'].forEach(dir=>{
+    const phase=dir==='NS'?tl.ns:tl.ew;
+    const prefix=dir==='NS'?'lN':'lE';
+    G(prefix+'red').className   ='bulb'+(phase==='red'   ?' on-red':'');
+    G(prefix+'yellow').className='bulb'+(phase==='yellow'?' on-yellow':'');
+    G(prefix+'green').className ='bulb'+(phase==='green' ?' on-green':'');
+    const rem=Math.max(0,dir==='NS'?tl.nsRemain:tl.ewRemain);
+    G('lt'+dir).textContent=phase.toUpperCase()+' '+rem.toFixed(1)+'s';
+  });
+}
+
+// ══════════════════════════════════════
+//  EVENT LOG
+// ══════════════════════════════════════
+function addEvent(msg,color='#2a1a08'){
+  events.unshift({msg,color});
+  if(events.length>8) events.pop();
+  G('eventLog').innerHTML=events.map(e=>
+    `<div style="font-size:.78rem;font-weight:800;color:${e.color};padding:3px 0;border-bottom:1px solid var(--border);">${e.msg}</div>`
+  ).join('');
+}
+
+// ══════════════════════════════════════
+//  BUTTONS
+// ══════════════════════════════════════
+G('btnStart').addEventListener('click',()=>{
+  if(running){
+    running=false; animId=null; lastTs=null;
+    G('btnStart').textContent='▶ ¡Jugar!';
+  } else {
+    running=true;
+    G('btnStart').textContent='⏸ Pausar';
+    addEvent('🟢 ¡Simulación iniciada!','#22cc55');
+    if(!animId) requestAnimationFrame(loop);
+  }
+});
+
+G('btnChaos').addEventListener('click',()=>{
+  // Spawn many cars at once to provoke inevitable crashes
+  for(let i=0;i<14;i++) setTimeout(()=>{ if(vehicles.length<55) spawnOne(); },i*60);
+  addEvent('🌀 ¡MODO CAOS!','#cc44cc');
+});
+
+G('btnReset').addEventListener('click',()=>{
+  running=false; animId=null; lastTs=null;
+  simSec=0; crashes=0; passed=0; frame=0; spawnAcc=0;
+  vehicles=[]; explosions=[]; events=[];
+  tl={ns:'green',ew:'red',phase:0,nsRemain:0,ewRemain:0};
+  G('btnStart').textContent='▶ ¡Jugar!';
+  G('eventLog').innerHTML='<div style="font-size:.75rem;font-weight:700;color:var(--muted);">¡Pulsa Jugar para empezar!</div>';
+  draw(); updateUI();
+});
+
+// ══════════════════════════════════════
+//  MAIN LOOP
+// ══════════════════════════════════════
+function loop(ts){
+  if(!running){ animId=null; return; }
+  animId=requestAnimationFrame(loop);
+  frame++;
+  const dt=lastTs ? Math.min((ts-lastTs)/1000,0.05) : 0.016;
+  lastTs=ts; simSec+=dt;
+
+  updateLights(dt);
+  spawnVehicles(dt);
+  updateVehicles(dt);
+  updateExplosions(dt);
+  draw();
+  updateUI();
+}
+
+// Initial draw
+draw();
+</script>
+</body>
+</html>
